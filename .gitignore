@@ -1,0 +1,10 @@
+# Variáveis de ambiente locais - NUNCA commitar
+.env
+.env.local
+.env.*.local
+
+# Dependências
+node_modules/
+
+# Logs
+*.log
