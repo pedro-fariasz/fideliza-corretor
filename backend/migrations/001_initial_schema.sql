@@ -1,30 +1,30 @@
 -- =============================================================================
--- Fideliza Corretor — Schema Inicial (001)
--- SaaS multi-tenant de pós-venda para corretores de plano de saúde
--- =============================================================================
--- Alvo: Supabase (PostgreSQL). Pronto para colar no SQL Editor.
+-- Fideliza Corretor — Schema inicial (SaaS multi-tenant para corretores de saúde)
+-- Migration: 001_initial_schema.sql
+-- Alvo: PostgreSQL / Supabase (colar direto no SQL Editor)
 --
--- ⚠️  ISOLAMENTO DE TENANT
--- O backend usa a SERVICE ROLE KEY do Supabase, que BYPASSA a RLS por completo.
--- Por decisão de arquitetura, NÃO criamos RLS policies aqui: o isolamento entre
--- tenants é feito EXCLUSIVAMENTE na camada de aplicação (repositories), com
--- `WHERE tenant_id = $tenantId` em TODA query. O tenant_id vem SEMPRE do JWT.
+-- IMPORTANTE:
+--   * NÃO usamos RLS. O isolamento entre tenants é feito na aplicação,
+--     sempre com WHERE tenant_id = $tenantId na camada de repositories.
+--   * Autenticação é via Supabase Auth — esta tabela `users` guarda apenas o
+--     perfil de aplicação (tenant, papel). Senha NUNCA fica aqui.
+--   * Nomes de tabela/coluna seguem o modelo de dados do projeto (fonte de
+--     verdade: docs/INSTRUCOES-PROJETO.md). Não simplificar nem renomear.
 -- =============================================================================
 
 
--- -----------------------------------------------------------------------------
--- Extensões
--- -----------------------------------------------------------------------------
--- uuid-ossp: habilitada por requisito do projeto (funções uuid_generate_*).
--- Usamos gen_random_uuid() (nativa do PostgreSQL) para os defaults das PKs.
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- =============================================================================
+-- 1. EXTENSÕES
+-- =============================================================================
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";   -- exigida pelas restrições do projeto
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";    -- fornece gen_random_uuid()
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";     -- busca fuzzy por nome (RAG)
+CREATE EXTENSION IF NOT EXISTS "btree_gin";   -- combina tenant_id + trigrama num índice GIN
 
 
--- -----------------------------------------------------------------------------
--- Função e gatilho de atualização automática de atualizado_em
--- -----------------------------------------------------------------------------
--- Mantém a coluna atualizado_em sincronizada em cada UPDATE, sem depender da
--- aplicação lembrar de setar o campo.
+-- =============================================================================
+-- 2. FUNÇÃO DE TRIGGER — atualiza atualizado_em automaticamente em cada UPDATE
+-- =============================================================================
 CREATE OR REPLACE FUNCTION set_atualizado_em()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -34,241 +34,228 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- -----------------------------------------------------------------------------
--- Tabela: tenants (corretores / contas do SaaS)
--- -----------------------------------------------------------------------------
--- Cada corretor independente é um tenant. Toda outra tabela referencia
--- tenant_id para garantir o isolamento na aplicação.
+-- =============================================================================
+-- 3. TABELA: tenants
+-- Cada corretor (ou corretora) é um tenant. Raiz do isolamento multi-tenant.
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS tenants (
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nome          TEXT NOT NULL,                      -- nome do corretor / da corretora
-    email         TEXT NOT NULL UNIQUE,               -- e-mail de login/contato do tenant
-    telefone      TEXT,                               -- telefone de contato
-    ativo         BOOLEAN NOT NULL DEFAULT TRUE,      -- desativa o tenant sem apagar dados
-    criado_em     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+    id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nome                 TEXT NOT NULL,                       -- nome do corretor / corretora
+    email                TEXT UNIQUE,                         -- e-mail de contato
+    plano                TEXT NOT NULL DEFAULT 'essencial',   -- essencial | profissional
+    status               TEXT NOT NULL DEFAULT 'ativo',       -- ativo | suspenso | cancelado
+    consultas_mes_atual  INTEGER NOT NULL DEFAULT 0,          -- contador do teto de consultas do agente
+    criado_em            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    atualizado_em        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE OR REPLACE TRIGGER trg_tenants_atualizado_em
+DROP TRIGGER IF EXISTS trg_tenants_atualizado_em ON tenants;
+CREATE TRIGGER trg_tenants_atualizado_em
     BEFORE UPDATE ON tenants
-    FOR EACH ROW
-    EXECUTE FUNCTION set_atualizado_em();
+    FOR EACH ROW EXECUTE FUNCTION set_atualizado_em();
 
 
--- -----------------------------------------------------------------------------
--- Tabela: usuarios (logins vinculados a um tenant)
--- -----------------------------------------------------------------------------
--- Usuários que autenticam no sistema. O tenant_id do usuário logado é o que
--- alimenta o JWT e, por consequência, o filtro de isolamento das queries.
-CREATE TABLE IF NOT EXISTS usuarios (
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id     UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    nome          TEXT NOT NULL,
-    email         TEXT NOT NULL UNIQUE,               -- e-mail de login
-    senha_hash    TEXT NOT NULL,                      -- hash da senha (nunca em texto puro)
-    ativo         BOOLEAN NOT NULL DEFAULT TRUE,
-    criado_em     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+-- =============================================================================
+-- 4. TABELA: users
+-- Perfil de aplicação do usuário. Credenciais ficam no Supabase Auth.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS users (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id   UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    email       TEXT NOT NULL UNIQUE,                          -- espelha o e-mail do Supabase Auth
+    role        TEXT NOT NULL DEFAULT 'admin',                 -- admin | membro
+    criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE OR REPLACE TRIGGER trg_usuarios_atualizado_em
-    BEFORE UPDATE ON usuarios
-    FOR EACH ROW
-    EXECUTE FUNCTION set_atualizado_em();
-
-CREATE INDEX IF NOT EXISTS idx_usuarios_tenant_id ON usuarios (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_users_tenant_id ON users (tenant_id);
 
 
--- -----------------------------------------------------------------------------
--- Tabela: clientes (cadastro dos segurados do corretor)
--- -----------------------------------------------------------------------------
--- Coração do sistema. O corretor cadastra o cliente uma vez e o sistema cuida
--- do relacionamento. Os campos abaixo alimentam o cálculo do score de
--- completude (ver CLAUDE.md).
+-- =============================================================================
+-- 5. TABELA: clientes
+-- Clientes da carteira do corretor. Núcleo do CRM.
+-- Só `nome` é NOT NULL: o cadastro pode ser incompleto de propósito — o
+-- score_completude reflete isso e bloqueia alertas quando faltam obrigatórios.
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS clientes (
     id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id            UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
 
-    -- --- Campos OBRIGATÓRIOS (bloqueiam alertas se vazios) ---
+    -- --- Obrigatórios (vazios NÃO travam o INSERT, mas bloqueiam alertas) ---
     nome                 TEXT NOT NULL,
-    telefone_whatsapp    TEXT NOT NULL,
-    data_inicio_plano    DATE,
+    telefone_whatsapp    TEXT,
+    data_inicio_plano    DATE,                                 -- vigência / aniversário do plano
     operadora            TEXT,
 
-    -- --- Campos IMPORTANTES (−10% cada no score) ---
-    data_aniversario     DATE,
+    -- --- Importantes (−10% cada no score) ---
+    data_aniversario     DATE,                                 -- aniversário do titular
     email                TEXT,
-    tipo_plano           TEXT,
+    tipo_plano           TEXT CHECK (tipo_plano IN ('PF','PME','Adesao','PJ')),
 
-    -- --- Campos COMPLEMENTARES (−5% cada no score) ---
-    nivel_sinistralidade TEXT,
+    -- --- Complementares (−5% cada no score) ---
+    nivel_sinistralidade TEXT CHECK (nivel_sinistralidade IN ('baixo','medio','alto')),
     data_encerramento    DATE,
     carencia_meses       INTEGER,
     qtd_dependentes      INTEGER DEFAULT 0,
 
-    -- --- Dados adicionais ---
-    -- CPF nullable: nem sempre o corretor tem o dado na hora do cadastro.
-    cpf                  TEXT,
-    -- Dia do mês de vencimento do boleto (1 a 31).
+    -- --- Demais dados ---
+    cpf                  TEXT,                                 -- nullable: nem sempre disponível na hora
+    plano_nome           TEXT,
+    valor_mensalidade    NUMERIC(10,2),
     vencimento_boleto    INTEGER CHECK (vencimento_boleto BETWEEN 1 AND 31),
+    ultimo_contato_em    TIMESTAMPTZ,
+    notas                TEXT,
 
-    -- --- Estado e score ---
-    -- score de completude (0 a 100), recalculado ao salvar o cliente.
-    score                INTEGER NOT NULL DEFAULT 0 CHECK (score BETWEEN 0 AND 100),
-    -- status do relacionamento: ativo | inativo | encerrado
-    status               TEXT NOT NULL DEFAULT 'ativo',
+    -- --- Estado e scores ---
+    status               TEXT NOT NULL DEFAULT 'ativo'
+                              CHECK (status IN ('ativo','inadimplente','cancelado')),
+    score_completude     INTEGER NOT NULL DEFAULT 0 CHECK (score_completude BETWEEN 0 AND 100),
+    churn_score          INTEGER NOT NULL DEFAULT 0 CHECK (churn_score BETWEEN 0 AND 100),
 
     criado_em            TIMESTAMPTZ NOT NULL DEFAULT now(),
     atualizado_em        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Gatilho para atualizar atualizado_em automaticamente em clientes.
-CREATE OR REPLACE TRIGGER trg_clientes_atualizado_em
+DROP TRIGGER IF EXISTS trg_clientes_atualizado_em ON clientes;
+CREATE TRIGGER trg_clientes_atualizado_em
     BEFORE UPDATE ON clientes
-    FOR EACH ROW
-    EXECUTE FUNCTION set_atualizado_em();
+    FOR EACH ROW EXECUTE FUNCTION set_atualizado_em();
 
--- Índices de clientes (isolamento e consultas mais frequentes).
-CREATE INDEX IF NOT EXISTS idx_clientes_tenant_id     ON clientes (tenant_id);
-CREATE INDEX IF NOT EXISTS idx_clientes_tenant_status ON clientes (tenant_id, status);
--- idx_clientes_tenant_nome: usado pelo RAG / busca por nome dentro do tenant.
-CREATE INDEX IF NOT EXISTS idx_clientes_tenant_nome   ON clientes (tenant_id, nome);
+-- Índices de clientes -------------------------------------------------------
+CREATE INDEX IF NOT EXISTS idx_clientes_tenant_id
+    ON clientes (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_clientes_tenant_status
+    ON clientes (tenant_id, status);
+-- Busca fuzzy por nome dentro do tenant (fluxo de RAG): GIN + trigrama.
+CREATE INDEX IF NOT EXISTS idx_clientes_tenant_nome
+    ON clientes USING GIN (tenant_id, nome gin_trgm_ops);
 
 
--- -----------------------------------------------------------------------------
--- Tabela: alertas (lembretes/ações automáticas geradas para cada cliente)
--- -----------------------------------------------------------------------------
--- O cron (fase futura) gera alertas de pós-venda; aqui já deixamos a estrutura
--- e os índices prontos.
+-- =============================================================================
+-- 6. TABELA: alertas
+-- Alertas agendados (para o cliente ou para o corretor).
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS alertas (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id     UUID NOT NULL REFERENCES tenants(id)  ON DELETE CASCADE,
     cliente_id    UUID NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
-    tipo          TEXT NOT NULL,                       -- ex.: aniversario, vencimento_boleto, renovacao
-    canal         TEXT,                                -- ex.: whatsapp, email
-    -- status do alerta: pendente | enviado | cancelado | erro
-    status        TEXT NOT NULL DEFAULT 'pendente',
-    agendado_para TIMESTAMPTZ,                         -- quando o alerta deve disparar
-    enviado_em    TIMESTAMPTZ,                         -- quando efetivamente foi enviado
-    payload       JSONB,                               -- dados extras do alerta
+    tipo          TEXT NOT NULL,                        -- aniversario_plano | aniversario_cliente |
+                                                        -- boleto_disponivel | boleto_atraso |
+                                                        -- sinistralidade | follow_up |
+                                                        -- renovar_contato | churn_alto
+    canal         TEXT CHECK (canal IN ('whatsapp','email','painel')),
+    agendado_para TIMESTAMPTZ,                          -- quando deve disparar (com hora)
+    status        TEXT NOT NULL DEFAULT 'pendente'
+                       CHECK (status IN ('pendente','enviado','falhou','ignorado')),
+    tentativas    INTEGER NOT NULL DEFAULT 0,           -- reprocessamento idempotente do cron
+    enviado_em    TIMESTAMPTZ,
+    erro          TEXT,                                 -- mensagem de erro do último disparo
     criado_em     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_alertas_tenant_id ON alertas (tenant_id);
--- Índice PARCIAL: acelera a varredura do cron pelos alertas ainda pendentes.
+CREATE INDEX IF NOT EXISTS idx_alertas_tenant_id
+    ON alertas (tenant_id);
+-- Índice PARCIAL: fila de disparo (apenas pendentes).
 CREATE INDEX IF NOT EXISTS idx_alertas_pendentes
     ON alertas (tenant_id, agendado_para)
     WHERE status = 'pendente';
 
 
--- -----------------------------------------------------------------------------
--- Tabela: historico (log de interações com o cliente)
--- -----------------------------------------------------------------------------
--- Registra mensagens enviadas/recebidas, mudanças e eventos relevantes, para
--- dar contexto ao agente e ao corretor.
-CREATE TABLE IF NOT EXISTS historico (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id   UUID NOT NULL REFERENCES tenants(id)  ON DELETE CASCADE,
-    cliente_id  UUID REFERENCES clientes(id) ON DELETE CASCADE,
-    tipo        TEXT NOT NULL,                         -- ex.: mensagem_enviada, mensagem_recebida, nota
-    canal       TEXT,                                 -- ex.: whatsapp, email, sistema
-    conteudo    TEXT,                                 -- corpo da mensagem/nota
-    metadata    JSONB,                                -- dados extras (ids externos, status, etc.)
-    criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+-- =============================================================================
+-- 7. TABELA: historico_disparos
+-- Registro de cada mensagem efetivamente disparada (ligado ao alerta de origem).
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS historico_disparos (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id        UUID NOT NULL REFERENCES tenants(id)  ON DELETE CASCADE,
+    cliente_id       UUID REFERENCES clientes(id) ON DELETE CASCADE,
+    alerta_id        UUID REFERENCES alertas(id)  ON DELETE SET NULL,
+    canal            TEXT,                              -- whatsapp | email
+    conteudo_enviado TEXT,                              -- texto renderizado enviado
+    status           TEXT,                              -- enviado | falhou
+    criado_em        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_historico_tenant_id ON historico (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_historico_tenant_id
+    ON historico_disparos (tenant_id);
 
 
--- -----------------------------------------------------------------------------
--- Tabela: sessoes (estado das conversas de WhatsApp por telefone)
--- -----------------------------------------------------------------------------
--- Mantém o contexto da conversa do agente com o cliente/corretor, indexado
--- pelo telefone que originou a mensagem.
-CREATE TABLE IF NOT EXISTS sessoes (
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id     UUID REFERENCES tenants(id)  ON DELETE CASCADE,
-    cliente_id    UUID REFERENCES clientes(id) ON DELETE SET NULL,
-    telefone      TEXT NOT NULL,                       -- número que identifica a sessão
-    estado        TEXT,                                -- estágio atual do fluxo conversacional
-    contexto      JSONB,                               -- memória/contexto da conversa
-    expira_em     TIMESTAMPTZ,                         -- expiração da janela de sessão
-    criado_em     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+-- =============================================================================
+-- 8. TABELA: sessoes_whatsapp
+-- Contexto de conversa do agente. TTL de 30 min via ultima_atividade.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS sessoes_whatsapp (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id        UUID REFERENCES tenants(id) ON DELETE CASCADE,   -- nulo antes da identificação
+    numero_telefone  TEXT NOT NULL,                     -- chave de retomada da sessão
+    contexto_json    JSONB NOT NULL DEFAULT '{}'::jsonb,
+    ultima_atividade TIMESTAMPTZ NOT NULL DEFAULT now(),
+    criado_em        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE OR REPLACE TRIGGER trg_sessoes_atualizado_em
-    BEFORE UPDATE ON sessoes
-    FOR EACH ROW
-    EXECUTE FUNCTION set_atualizado_em();
-
--- idx_sessoes_telefone: lookup da sessão pelo telefone quando chega mensagem.
-CREATE INDEX IF NOT EXISTS idx_sessoes_telefone ON sessoes (telefone);
+CREATE INDEX IF NOT EXISTS idx_sessoes_telefone
+    ON sessoes_whatsapp (numero_telefone);
 
 
--- -----------------------------------------------------------------------------
--- Tabela: templates (modelos de mensagem por tenant)
--- -----------------------------------------------------------------------------
--- Modelos reutilizáveis de mensagem (WhatsApp/e-mail). Cada tenant tem os seus;
--- o tenant demo recebe um conjunto padrão nos seeds abaixo.
+-- =============================================================================
+-- 9. TABELA: templates
+-- Templates de mensagem por tenant, tipo e canal.
+-- =============================================================================
 CREATE TABLE IF NOT EXISTS templates (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id     UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    chave         TEXT NOT NULL,                       -- identificador lógico (ex.: aniversario)
-    canal         TEXT NOT NULL DEFAULT 'whatsapp',    -- whatsapp | email
-    titulo        TEXT,                                -- assunto (para e-mail) ou rótulo interno
-    corpo         TEXT NOT NULL,                       -- texto com placeholders {{nome}} etc.
+    tipo          TEXT NOT NULL,                        -- aniversario_plano | boleto_disponivel | ...
+    canal         TEXT NOT NULL DEFAULT 'whatsapp'
+                       CHECK (canal IN ('whatsapp','email')),
+    assunto       TEXT,                                 -- apenas para e-mail
+    conteudo      TEXT NOT NULL,                        -- corpo com variáveis {nome} etc.
     ativo         BOOLEAN NOT NULL DEFAULT TRUE,
     criado_em     TIMESTAMPTZ NOT NULL DEFAULT now(),
     atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (tenant_id, chave, canal)
+    -- tipo + canal únicos por tenant (garante seeds idempotentes).
+    CONSTRAINT uq_templates_tenant_tipo_canal UNIQUE (tenant_id, tipo, canal)
 );
 
-CREATE OR REPLACE TRIGGER trg_templates_atualizado_em
+DROP TRIGGER IF EXISTS trg_templates_atualizado_em ON templates;
+CREATE TRIGGER trg_templates_atualizado_em
     BEFORE UPDATE ON templates
-    FOR EACH ROW
-    EXECUTE FUNCTION set_atualizado_em();
+    FOR EACH ROW EXECUTE FUNCTION set_atualizado_em();
 
-CREATE INDEX IF NOT EXISTS idx_templates_tenant_id ON templates (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_templates_tenant_id
+    ON templates (tenant_id);
 
 
 -- =============================================================================
--- SEEDS — Tenant demo + templates padrão
+-- 10. SEEDS — tenant demo (UUID fixo) + templates padrão
+-- Idempotente: pode rodar novamente sem duplicar.
+-- O CONTEÚDO real dos templates vem do documento "Templates de Mensagem"
+-- (Prompt 2, no Notion). Abaixo ficam placeholders só para o tenant demo.
 -- =============================================================================
--- Tenant demo com UUID fixo para facilitar desenvolvimento e testes locais.
-INSERT INTO tenants (id, nome, email)
-VALUES (
-    '00000000-0000-0000-0000-000000000000',
-    'Corretor Demo',
-    'demo@fidelizacorretor.com.br'
-)
+INSERT INTO tenants (id, nome, email, plano)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Corretor Demo', 'demo@fideliza.com.br', 'profissional')
 ON CONFLICT (id) DO NOTHING;
 
--- Templates padrão para o tenant demo. ON CONFLICT evita duplicar em re-execução.
-INSERT INTO templates (tenant_id, chave, canal, titulo, corpo)
+INSERT INTO templates (tenant_id, tipo, canal, assunto, conteudo)
 VALUES
-    (
-        '00000000-0000-0000-0000-000000000000',
-        'boas_vindas', 'whatsapp', 'Boas-vindas',
-        'Olá {{nome}}! 👋 Seu plano com a {{operadora}} está ativo. Qualquer dúvida, é só me chamar por aqui.'
-    ),
-    (
-        '00000000-0000-0000-0000-000000000000',
-        'aniversario', 'whatsapp', 'Aniversário',
-        'Feliz aniversário, {{nome}}! 🎉 Que seu novo ciclo seja de muita saúde. Conte comigo para o que precisar.'
-    ),
-    (
-        '00000000-0000-0000-0000-000000000000',
-        'vencimento_boleto', 'whatsapp', 'Lembrete de vencimento',
-        'Oi {{nome}}, passando para lembrar que o boleto do seu plano vence no dia {{vencimento_boleto}}. Já recebeu? 😊'
-    ),
-    (
-        '00000000-0000-0000-0000-000000000000',
-        'renovacao', 'email', 'Renovação do seu plano de saúde',
-        'Olá {{nome}}, o seu plano com a {{operadora}} está próximo do período de renovação. Vamos conversar sobre as opções?'
-    )
-ON CONFLICT (tenant_id, chave, canal) DO NOTHING;
+    ('00000000-0000-0000-0000-000000000000', 'aniversario_plano',   'whatsapp', NULL,
+        'Oi {nome}! Seu plano {plano_nome} na {operadora} completa um ano em breve. Bora revisar antes do reajuste?'),
+    ('00000000-0000-0000-0000-000000000000', 'aniversario_plano',   'email',    'Seu plano faz aniversário em breve',
+        'Olá {nome}, seu plano {plano_nome} está próximo da renovação anual. Vamos conversar sobre as opções?'),
+    ('00000000-0000-0000-0000-000000000000', 'aniversario_cliente', 'whatsapp', NULL,
+        'Feliz aniversário, {nome}! 🎉 Muita saúde. Conte sempre comigo.'),
+    ('00000000-0000-0000-0000-000000000000', 'boleto_disponivel',   'whatsapp', NULL,
+        'Oi {nome}, tudo bem? O boleto do seu plano vence no dia {vencimento_boleto}. Qualquer dúvida, é só chamar!'),
+    ('00000000-0000-0000-0000-000000000000', 'boleto_disponivel',   'email',    'Seu boleto já está disponível',
+        'Olá {nome}, o boleto do seu plano {plano_nome} vence no dia {vencimento_boleto}. Estou à disposição.'),
+    ('00000000-0000-0000-0000-000000000000', 'follow_up',           'whatsapp', NULL,
+        'Oi {nome}! Passando para saber se está tudo certo com seu plano {plano_nome}. Precisa de algo?'),
+    ('00000000-0000-0000-0000-000000000000', 'boleto_atraso',       'whatsapp', NULL,
+        '[Corretor] {nome} está com boleto em atraso. Vale um contato hoje.'),
+    ('00000000-0000-0000-0000-000000000000', 'churn_alto',          'whatsapp', NULL,
+        '[Corretor] {nome} está em risco de cancelamento. Motivos: {churn_motivos}.'),
+    ('00000000-0000-0000-0000-000000000000', 'cadastro_incompleto', 'whatsapp', NULL,
+        '[Corretor] Cadastro de {nome} está em {score_completude}%. Faltam: {campos_faltantes}.')
+ON CONFLICT (tenant_id, tipo, canal) DO NOTHING;
 
 -- =============================================================================
--- FIM DO SCHEMA 001
+-- FIM DO SCHEMA INICIAL
 -- =============================================================================
