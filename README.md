@@ -131,6 +131,81 @@ completo**. Por isso o schema **não** cria RLS policies: o isolamento entre ten
 
 **Regra: não pular fases.** Cada fase tem um teste com usuário real antes de avançar.
 
+## Testando o backend localmente
+
+Pré-requisitos: migration `001_initial_schema.sql` já rodada no Supabase e um
+`.env` no `backend/` preenchido a partir do `.env.example` (precisa apenas de
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `PORT` e
+`CORS_ORIGIN` para a Fase 1).
+
+Instale as dependências e suba a API:
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+### 1. Criar um usuário no Supabase Auth
+
+No painel do Supabase: **Authentication → Users → Add user** (marque
+*Auto Confirm User*). Guarde o e-mail, a senha e o `id` (UUID) gerado.
+
+### 2. Vincular o usuário ao tenant demo
+
+Rode no **SQL Editor** do Supabase, garantindo o tenant demo e ligando o perfil:
+
+```sql
+INSERT INTO tenants (id, nome, email)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Tenant Demo', 'demo@fideliza.local')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO users (id, tenant_id, email, role)
+VALUES (
+  '<ID_DO_USUARIO_DO_AUTH>',
+  '00000000-0000-0000-0000-000000000000',
+  '<EMAIL_DO_USUARIO>',
+  'admin'
+);
+```
+
+### 3. Obter um access token
+
+Use a `SUPABASE_ANON_KEY` para trocar e-mail/senha por um `access_token`:
+
+```bash
+curl -X POST "$SUPABASE_URL/auth/v1/token?grant_type=password" \
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"seu@email.com","password":"suasenha"}'
+```
+
+Copie o `access_token` da resposta.
+
+### 4. Chamar a API
+
+```bash
+# Criar cliente (só nome é obrigatório)
+curl -X POST http://localhost:3000/api/clientes \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nome": "Maria Souza",
+    "telefone_whatsapp": "+5511999998888",
+    "data_inicio_plano": "2024-03-01",
+    "operadora": "SulAmérica",
+    "email": "maria@example.com",
+    "tipo_plano": "PF"
+  }'
+
+# Listar clientes do tenant (com filtro de incompletos)
+curl "http://localhost:3000/api/clientes?incompletos=true" \
+  -H "Authorization: Bearer <ACCESS_TOKEN>"
+```
+
+O `score_completude` retorna calculado pelo backend; qualquer valor enviado no
+body é ignorado.
+
 ## Licença
 
 Proprietary — todos os direitos reservados.
