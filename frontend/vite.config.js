@@ -7,4 +7,8 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  preview: {
+    // Servido atrás do proxy do Railway (npm start) — libera o domínio público.
+    allowedHosts: ['.up.railway.app'],
+  },
 });
