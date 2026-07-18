@@ -17,6 +17,10 @@ async function authMiddleware(req, res, next) {
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
 
     if (userError || !userData || !userData.user) {
+      console.error('[auth] token rejeitado pelo Supabase', {
+        error: userError ? userError.message : 'usuário ausente na resposta',
+        status: userError ? userError.status : undefined,
+      });
       return res.status(401).json({ error: 'Token inválido ou expirado.' });
     }
 
