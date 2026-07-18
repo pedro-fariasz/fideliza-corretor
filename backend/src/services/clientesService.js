@@ -124,6 +124,14 @@ function validarPayload(payload, { criando }) {
       throw new ValidationError('carencia_meses deve ser um inteiro maior ou igual a 0.');
     }
   }
+
+  if (
+    payload.aceita_felicitacao_aniversario !== undefined &&
+    payload.aceita_felicitacao_aniversario !== null &&
+    typeof payload.aceita_felicitacao_aniversario !== 'boolean'
+  ) {
+    throw new ValidationError('aceita_felicitacao_aniversario deve ser true ou false.');
+  }
 }
 
 async function criar(tenantId, input) {

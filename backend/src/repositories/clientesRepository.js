@@ -21,6 +21,7 @@ const WRITABLE_COLUMNS = [
   'ultimo_contato_em',
   'notas',
   'status',
+  'aceita_felicitacao_aniversario',
 ];
 
 function pickWritable(payload) {

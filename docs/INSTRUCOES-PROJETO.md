@@ -92,6 +92,7 @@ clientes
   vencimento_boleto       -- dia do mês
   nivel_sinistralidade    -- baixo | medio | alto
   qtd_dependentes
+  aceita_felicitacao_aniversario  -- consentimento explícito p/ felicitação de aniversário via WhatsApp (LGPD + Meta); default false
   status                  -- ativo | inadimplente | cancelado
   score_completude        -- 0-100, calculado ao salvar
   churn_score             -- 0-100, calculado no cron diário
