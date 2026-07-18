@@ -86,6 +86,15 @@ migrations em ordem numérica (001, 002, ...).
    ```
    (no `backend/` e no `frontend/`, em terminais separados)
 
+## Produção
+
+| Serviço | URL |
+|---|---|
+| Frontend | https://distinguished-inspiration-production-e883.up.railway.app |
+| Backend (API) | https://fideliza-corretor-production-207b.up.railway.app |
+
+Estado atual do deploy e itens em aberto: [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md).
+
 ## Rodando na nuvem (Railway)
 
 Dois serviços no mesmo projeto Railway, apontando para este repositório:
