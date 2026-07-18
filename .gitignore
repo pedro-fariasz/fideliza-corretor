@@ -6,5 +6,8 @@
 # Dependências
 node_modules/
 
+# Build do frontend (gerado por npm run build)
+dist/
+
 # Logs
 *.log
