@@ -54,7 +54,8 @@ guiado pelo princípio **"set and forget"**.
 | `sessoes_whatsapp` | Contexto de conversa do agente WhatsApp, com TTL de 30 minutos de inatividade. |
 | `templates` | Templates de mensagem por tenant, tipo e canal (WhatsApp/e-mail). |
 
-O schema completo está em [`backend/migrations/001_initial_schema.sql`](backend/migrations/001_initial_schema.sql).
+O schema completo está em [`backend/migrations/`](backend/migrations/) — rode as
+migrations em ordem numérica (001, 002, ...).
 
 ## Setup local
 
@@ -72,14 +73,34 @@ O schema completo está em [`backend/migrations/001_initial_schema.sql`](backend
    ```bash
    cp .env.example .env
    ```
-4. Rode a migration no Supabase: abra o projeto → **SQL Editor** → cole o conteúdo de
-   `backend/migrations/001_initial_schema.sql` → execute. O script é idempotente
-   (pode ser reexecutado sem duplicar nada).
-5. Suba os servidores de desenvolvimento:
+4. Rode as migrations no Supabase: abra o projeto → **SQL Editor** → cole e execute,
+   em ordem, o conteúdo de `backend/migrations/001_initial_schema.sql` e
+   `backend/migrations/002_consentimento_felicitacao.sql`. Os scripts são
+   idempotentes (podem ser reexecutados sem duplicar nada).
+5. Configure também o `.env` do frontend: `cd frontend && cp .env.example .env`
+   e preencha `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (anon, só login) e
+   `VITE_API_URL` (backend local ou do Railway).
+6. Suba os servidores de desenvolvimento:
    ```bash
    npm run dev
    ```
    (no `backend/` e no `frontend/`, em terminais separados)
+
+## Rodando na nuvem (Railway)
+
+Dois serviços no mesmo projeto Railway, apontando para este repositório:
+
+| Serviço | Root Directory | Start | Variáveis |
+|---|---|---|---|
+| backend | `backend` | `npm start` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `CORS_ORIGIN` |
+| frontend | `frontend` | `npm start` | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` |
+
+- `VITE_API_URL` do frontend = URL pública do serviço backend.
+- `CORS_ORIGIN` do backend deve listar **todas** as origens usadas, separadas por
+  vírgula — o frontend do Railway e o local de desenvolvimento, ex.:
+  `http://localhost:5173,https://fideliza-frontend.up.railway.app`.
+- Com o frontend no ar, qualquer computador usa o sistema pelo navegador — a
+  instalação local só é necessária para desenvolver.
 
 ## Estrutura de pastas
 
@@ -133,7 +154,7 @@ completo**. Por isso o schema **não** cria RLS policies: o isolamento entre ten
 
 ## Testando o backend localmente
 
-Pré-requisitos: migration `001_initial_schema.sql` já rodada no Supabase e um
+Pré-requisitos: migrations `001` e `002` já rodadas no Supabase e um
 `.env` no `backend/` preenchido a partir do `.env.example` (precisa apenas de
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `PORT` e
 `CORS_ORIGIN` para a Fase 1).
