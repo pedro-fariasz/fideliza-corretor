@@ -28,7 +28,7 @@ async function authMiddleware(req, res, next) {
 
     const { data: profile, error: profileError } = await supabase
       .from('users')
-      .select('id, tenant_id, email, role')
+      .select('id, tenant_id, email, role, status, nome')
       .eq('id', authUserId)
       .maybeSingle();
 
@@ -51,6 +51,8 @@ async function authMiddleware(req, res, next) {
       id: profile.id,
       email: profile.email,
       role: profile.role,
+      status: profile.status,
+      nome: profile.nome,
       tenantId: profile.tenant_id,
     };
 
