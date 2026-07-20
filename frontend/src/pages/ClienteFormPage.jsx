@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import FormField from '../components/FormField';
 import ScoreBadge from '../components/ScoreBadge';
+import Logo from '../components/Logo';
 
 const TIPO_PLANO_OPTIONS = [
   { value: 'PF', label: 'PF (individual/familiar)' },
@@ -155,7 +156,7 @@ export default function ClienteFormPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
         <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow">
-          <p className="text-lg font-semibold text-gray-900">Cliente salvo com sucesso!</p>
+          <p className="text-lg font-semibold text-brand-navy">Cliente salvo com sucesso!</p>
           <div className="mt-4 flex items-center justify-center gap-2">
             <span className="text-sm text-gray-600">Score de completude:</span>
             <ScoreBadge score={savedScore} />
@@ -166,7 +167,7 @@ export default function ClienteFormPage() {
             </p>
           )}
           <p className="mt-4 text-sm text-gray-400">Voltando para a lista...</p>
-          <Link to="/" className="mt-2 inline-block text-sm font-semibold text-blue-600 underline">
+          <Link to="/" className="mt-2 inline-block text-sm font-semibold text-brand-blue underline">
             Ir para a lista agora
           </Link>
         </div>
@@ -178,7 +179,12 @@ export default function ClienteFormPage() {
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-sm">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-          <h1 className="text-xl font-bold text-gray-900">Novo cliente</h1>
+          <div className="flex items-center gap-3">
+            <Link to="/" aria-label="Voltar para a lista">
+              <Logo variant="simbolo" size={32} />
+            </Link>
+            <h1 className="text-xl font-bold text-brand-navy">Novo cliente</h1>
+          </div>
           <Link to="/" className="text-sm text-gray-500 hover:text-gray-800">
             ← Voltar para a lista
           </Link>
@@ -232,7 +238,7 @@ export default function ClienteFormPage() {
           </section>
 
           <section className={sectionClasses}>
-            <h2 className={`${sectionTitleClasses} text-blue-700`}>
+            <h2 className={`${sectionTitleClasses} text-brand-blue-dark`}>
               Importantes — melhoram o cadastro
             </h2>
             <div className={gridClasses}>
@@ -348,7 +354,7 @@ export default function ClienteFormPage() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-blue-200 bg-blue-50 p-5">
+          <section className="rounded-lg border border-brand-blue/25 bg-brand-blue/5 p-5">
             <label className="flex items-start gap-3">
               <input
                 type="checkbox"
@@ -379,7 +385,7 @@ export default function ClienteFormPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-md bg-brand-blue px-6 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? 'Salvando...' : 'Salvar cliente'}
             </button>

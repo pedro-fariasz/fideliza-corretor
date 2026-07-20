@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import Logo from '../components/Logo';
+
+const inputClasses =
+  'w-full rounded-lg border border-white/15 bg-white/5 px-3.5 py-2.5 text-sm text-white ' +
+  'placeholder:text-white/40 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/60';
 
 export default function LoginPage() {
   const { session, loading, signIn } = useAuth();
@@ -35,53 +40,115 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-sm rounded-lg bg-white p-8 shadow">
-        <h1 className="text-2xl font-bold text-gray-900">Fideliza Corretor</h1>
-        <p className="mt-1 text-sm text-gray-500">Entre para acessar sua carteira de clientes.</p>
+    <div className="flex min-h-screen flex-col bg-brand-navy">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
+        <Logo variant="mono-branco" size={40} />
+      </header>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-              E-mail
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center gap-12 px-6 py-10 lg:flex-row lg:gap-20">
+        {/* Hero */}
+        <section className="max-w-xl flex-1">
+          <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
+            O pós-venda da sua carteira,
+            <br />
+            <span className="text-brand-blue">no piloto automático</span>
+            <span className="text-brand-amber">.</span>
+          </h1>
+          <p className="mt-5 max-w-md text-base leading-relaxed text-white/70">
+            Cadastre o cliente uma vez e o Fideliza cuida do relacionamento sozinho — WhatsApp,
+            e-mail e alertas de carência, aniversário e reajuste, tudo em um único lugar.
+          </p>
+
+          {/* Cards decorativos no estilo da referência */}
+          <div className="mt-10 hidden gap-4 lg:flex">
+            <div className="w-44 rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-white/50">
+                Score médio da carteira
+              </p>
+              <p className="mt-1 font-heading text-2xl font-semibold text-white">84%</p>
+              <div className="mt-2 h-1.5 w-full rounded-full bg-white/10">
+                <div className="h-1.5 w-[84%] rounded-full bg-brand-blue" />
+              </div>
+            </div>
+            <div className="flex-1 rounded-xl border border-white/10 bg-white/5 p-4">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-brand-amber" aria-hidden="true" />
+                <p className="text-[11px] font-medium uppercase tracking-wide text-white/50">
+                  Alerta enviado · WhatsApp
+                </p>
+              </div>
+              <p className="mt-2 rounded-lg bg-brand-blue px-3 py-2 text-xs text-white">
+                Oi, Ana! A carência do seu plano termina esta semana. Posso te explicar o que
+                libera agora?
+              </p>
+            </div>
           </div>
+        </section>
 
-          <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-              Senha
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+        {/* Card de login */}
+        <section className="w-full max-w-sm">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
+            <h2 className="text-xl font-semibold text-white">Entrar</h2>
+            <p className="mt-1 text-sm text-white/60">
+              Acesse sua carteira de clientes.
+            </p>
+
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
+              <div>
+                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-white/80">
+                  E-mail
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  placeholder="voce@email.com"
+                  className={inputClasses}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="password"
+                  className="mb-1.5 block text-sm font-medium text-white/80"
+                >
+                  Senha
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  className={inputClasses}
+                />
+              </div>
+
+              {error && (
+                <p className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? 'Entrando...' : 'Entrar'}
+                {!submitting && <span aria-hidden="true">→</span>}
+              </button>
+            </form>
           </div>
+        </section>
+      </main>
 
-          {error && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {submitting ? 'Entrando...' : 'Entrar'}
-          </button>
-        </form>
-      </div>
+      <footer className="py-6 text-center text-xs text-white/40">
+        © Fideliza Corretor. Todos os direitos reservados.
+      </footer>
     </div>
   );
 }

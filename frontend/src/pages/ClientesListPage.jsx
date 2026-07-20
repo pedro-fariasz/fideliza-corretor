@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import ScoreBadge from '../components/ScoreBadge';
+import Logo from '../components/Logo';
 
 const STATUS_LABELS = {
   ativo: 'Ativo',
@@ -42,14 +43,14 @@ export default function ClientesListPage() {
   }, [carregar, somenteIncompletos]);
 
   const tabBase = 'rounded-md px-3 py-1.5 text-sm font-medium';
-  const tabActive = 'bg-blue-600 text-white';
+  const tabActive = 'bg-brand-blue text-white';
   const tabInactive = 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300';
 
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-sm">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
-          <h1 className="text-xl font-bold text-gray-900">Fideliza Corretor</h1>
+          <Logo variant="colorida" size={36} />
           <button
             type="button"
             onClick={signOut}
@@ -85,7 +86,7 @@ export default function ClientesListPage() {
 
           <Link
             to="/clientes/novo"
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            className="rounded-md bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark"
           >
             + Novo cliente
           </Link>
@@ -122,7 +123,7 @@ export default function ClientesListPage() {
             {!somenteIncompletos && (
               <Link
                 to="/clientes/novo"
-                className="mt-4 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                className="mt-4 inline-block rounded-md bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark"
               >
                 Cadastrar o primeiro cliente
               </Link>
@@ -136,7 +137,7 @@ export default function ClientesListPage() {
                 className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow-sm"
               >
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-gray-900">{cliente.nome}</p>
+                  <p className="truncate font-medium text-brand-navy">{cliente.nome}</p>
                   <p className="text-sm text-gray-500">
                     {cliente.operadora || 'Operadora não informada'}
                   </p>
