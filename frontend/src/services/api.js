@@ -164,4 +164,19 @@ export const api = {
     const query = qs.toString() ? `?${qs.toString()}` : '';
     return request(`/api/admin/relatorio/clientes${query}`);
   },
+
+  // --- Painel interno v2 (/api/interno/*) -----------------------------------
+  internoResumo() {
+    return request('/api/interno/resumo');
+  },
+
+  internoClientes(params = {}) {
+    const qs = new URLSearchParams();
+    if (params.incompletos) qs.set('incompletos', 'true');
+    if (params.status) qs.set('status', params.status);
+    if (params.operadora) qs.set('operadora', params.operadora);
+    if (params.tenantId) qs.set('tenantId', params.tenantId);
+    const query = qs.toString() ? `?${qs.toString()}` : '';
+    return request(`/api/interno/clientes${query}`);
+  },
 };

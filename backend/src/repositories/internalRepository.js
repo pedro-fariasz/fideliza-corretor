@@ -14,12 +14,18 @@ const { supabase } = require('../config/supabase');
 // =============================================================================
 
 // Lista clientes de TODOS os tenants, com o nome do corretor (tenant) embutido.
+// NOTA (20/07/2026): a projeção foi ESTENDIDA (não reescrita) para alimentar os
+// cards do Kanban do painel interno — data_inicio_plano (data de implementação),
+// carencia_meses e qtd_dependentes (vidas). Continua sendo a única leitura
+// cross-tenant do sistema, ainda contida neste arquivo e atrás de requireInternal.
 async function listAllClientes(filters = {}) {
   let query = supabase
     .from('clientes')
     .select(
       'id, tenant_id, nome, operadora, telefone_whatsapp, email, tipo_plano, ' +
-        'status, score_completude, criado_em, tenant:tenants(id, nome, email)'
+        'status, score_completude, criado_em, ' +
+        'data_inicio_plano, carencia_meses, qtd_dependentes, ' +
+        'tenant:tenants(id, nome, email)'
     );
 
   if (filters.status) query = query.eq('status', filters.status);
@@ -69,4 +75,26 @@ async function resumoPorTenant() {
   }));
 }
 
-module.exports = { listAllClientes, resumoPorTenant };
+// Contagem de disparos por cliente e por canal (WhatsApp/e-mail), para o card
+// do Kanban. Leitura cross-tenant — vive AQUI (arquivo sancionado) de propósito.
+// Em Fase 1 a tabela historico_disparos está vazia (disparos são Fase 2/3), então
+// o retorno costuma ser {} — o card mostra 0/0 até os disparos existirem.
+// Se filters.tenantId vier, restringe ao corretor (Kanban é sempre por corretor).
+async function contagemDisparos(filters = {}) {
+  let query = supabase.from('historico_disparos').select('cliente_id, canal');
+  if (filters.tenantId) query = query.eq('tenant_id', filters.tenantId);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const mapa = {};
+  for (const row of data || []) {
+    if (!row.cliente_id) continue;
+    if (!mapa[row.cliente_id]) mapa[row.cliente_id] = { whatsapp: 0, email: 0 };
+    if (row.canal === 'whatsapp') mapa[row.cliente_id].whatsapp += 1;
+    else if (row.canal === 'email') mapa[row.cliente_id].email += 1;
+  }
+  return mapa;
+}
+
+module.exports = { listAllClientes, resumoPorTenant, contagemDisparos };

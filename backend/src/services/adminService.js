@@ -40,4 +40,32 @@ async function relatorioClientes(filters) {
   return { clientes, resumo };
 }
 
-module.exports = { listarPendentes, aprovar, recusar, relatorioClientes };
+// --- Painel interno v2 — endpoints /api/interno/* ---------------------------
+// Reaproveitam internalRepository (não recriam a leitura cross-tenant).
+
+// GET /api/interno/resumo → resumo agregado por corretor (tenant).
+async function resumoInterno() {
+  return internalRepository.resumoPorTenant();
+}
+
+// GET /api/interno/clientes → clientes cross-tenant + contagem de disparos por
+// canal embutida em cada card. Filtros: status, operadora, incompletos, tenantId.
+async function clientesInterno(filters = {}) {
+  const [clientes, disparos] = await Promise.all([
+    internalRepository.listAllClientes(filters),
+    internalRepository.contagemDisparos({ tenantId: filters.tenantId }),
+  ]);
+  return clientes.map((c) => ({
+    ...c,
+    disparos: disparos[c.id] || { whatsapp: 0, email: 0 },
+  }));
+}
+
+module.exports = {
+  listarPendentes,
+  aprovar,
+  recusar,
+  relatorioClientes,
+  resumoInterno,
+  clientesInterno,
+};

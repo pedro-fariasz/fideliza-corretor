@@ -42,6 +42,14 @@ Um único sistema de login (Supabase Auth) para todos; o que muda é o comportam
   (`requireAtivo`), para o endpoint `/me` ainda responder a funcionário pendente.
 - **NÃO usamos RLS** (mantido): isolamento é app-layer via `tenant_id`. Migrations 001 e 003.
 
+### `is_platform_admin` — super-admin de plataforma (migration 004)
+Flag booleana em `users`, **ortogonal ao `role`** e um nível **acima** dele: marca o
+**super-admin da plataforma** (Pedro) com acesso total — vê tudo, faz tudo. **Decisão do
+Pedro (20/07/2026): mantida como marcador reservado.** Os gates do painel interno continuam
+por `role` (`requireInternal`/`requireAdmin`); **nenhuma rota exige a flag ainda**. Quando
+for usada, será só nas rotas `/api/admin/*` e **NUNCA** para bypassar `tenant_id` em rotas
+normais. Não confundir com o `role` `admin` (admin interno da equipe, que aprova funcionários).
+
 ## Tema (decisão do Pedro — 20/07/2026)
 - Telas de login/cadastro são **sempre claras** (regra do fundo branco, sem exceção).
 - **Depois de autenticado**, há um toggle de **dark mode** como preferência pessoal do usuário
