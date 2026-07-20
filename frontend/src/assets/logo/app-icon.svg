@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- Ícone do app: fundo branco + quadrado azul arredondado + símbolo F com ponto âmbar -->
+  <rect width="120" height="120" fill="#FFFFFF"/>
+  <rect x="8" y="8" width="104" height="104" rx="26" fill="#1E5EFF"/>
+  <g transform="translate(12.5 18.5) scale(0.7)">
+    <path fill="#FFFFFF" d="M50 8h34c4 0 6 3 6 7 0 19-16 33-38 33H36V22c0-8 6-14 14-14Z"/>
+    <path fill="#FFFFFF" d="M36 44h26c17 0 26 7 26 18s-9 18-26 18h-4v15c0 6-5 11-11 11s-11-5-11-11V44Z"/>
+    <circle cx="88" cy="98" r="13" fill="#F5A623"/>
+  </g>
+</svg>
