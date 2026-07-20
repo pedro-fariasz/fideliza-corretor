@@ -38,7 +38,7 @@ frontend/src/
 ```
 
 ## Identidade visual (decisão do Pedro — 20/07/2026)
-- **Fundo branco/claro é o padrão de TODAS as telas novas.** Única exceção aprovada: a tela de login atual (hero escuro em brand-navy).
+- **Fundo branco/claro é o padrão de TODAS as telas, sem exceção** (login incluído, convertido em 20/07/2026).
 - Tokens (Tailwind v4, via `@theme` em `frontend/src/index.css`): `brand-blue #1E5EFF` (primária — botões, links, ativos), `brand-blue-dark #174EA6` (hover), `brand-navy #0F1B2D` (texto de destaque), `brand-amber #F5A623` (destaque pontual — badges/alertas; NUNCA fundo grande ou botão).
 - Texto sobre `brand-blue` é sempre branco. Headings em Poppins, corpo em Inter.
 - Logos oficiais: originais em `frontend/src/assets/logo/`, versões web otimizadas em `assets/logo/web/`, componente `<Logo />` (`frontend/src/components/Logo.jsx`) com as variantes. Em fundo claro: colorida; em fundo escuro: negativa. Não recriar/alterar as artes.
