@@ -1,63 +1,35 @@
-import simboloColorida from '../assets/logo/simbolo-colorida.svg';
-import simboloMonoBranco from '../assets/logo/simbolo-mono-branco.svg';
-import simboloMonoPreto from '../assets/logo/simbolo-mono-preto.svg';
+// Logos oficiais da marca (originais em assets/logo/, versões web otimizadas em assets/logo/web/).
+import horizontalColorida from '../assets/logo/web/horizontal-colorida.png';
+import horizontalMonoBranco from '../assets/logo/web/horizontal-mono-branco.png';
+import horizontalMonoPreto from '../assets/logo/web/horizontal-mono-preto.png';
+import horizontalNegativo from '../assets/logo/web/horizontal-negativo.png';
+import horizontalSimplificada from '../assets/logo/web/horizontal-simplificada.png';
+import simboloColorida from '../assets/logo/web/simbolo-colorida.png';
+import simboloPreto from '../assets/logo/web/simbolo-preto.png';
+import simboloBranco from '../assets/logo/web/simbolo-branco.png';
+import verticalColorida from '../assets/logo/web/vertical-colorida.png';
 
-// Wordmark composto em HTML (Poppins) ao lado do símbolo SVG, seguindo a prancha da marca.
 const VARIANTS = {
-  colorida: {
-    symbol: simboloColorida,
-    wordmark: 'text-brand-navy',
-    tagline: 'text-brand-blue',
-  },
-  'mono-branco': {
-    symbol: simboloMonoBranco,
-    wordmark: 'text-white',
-    tagline: 'text-white/70',
-  },
-  'mono-preto': {
-    symbol: simboloMonoPreto,
-    wordmark: 'text-brand-navy',
-    tagline: 'text-brand-navy/70',
-  },
-  simbolo: {
-    symbol: simboloColorida,
-  },
+  colorida: horizontalColorida, // fundo claro
+  'mono-branco': horizontalMonoBranco, // fundo escuro, monocromática
+  'mono-preto': horizontalMonoPreto, // fundo claro, monocromática
+  negativo: horizontalNegativo, // fundo escuro/colorido (versão oficial da prancha)
+  simplificada: horizontalSimplificada, // redução 2: símbolo + "Fideliza"
+  simbolo: simboloColorida, // redução 3: símbolo + ponto
+  'simbolo-preto': simboloPreto,
+  'simbolo-branco': simboloBranco,
+  vertical: verticalColorida,
 };
 
 export default function Logo({ variant = 'colorida', size = 32, className = '' }) {
-  const config = VARIANTS[variant] || VARIANTS.colorida;
-
-  const symbol = (
-    <img
-      src={config.symbol}
-      alt="Fideliza Corretor"
-      width={size}
-      height={size}
-      className="shrink-0"
-    />
-  );
-
-  if (variant === 'simbolo') {
-    return <span className={`inline-flex ${className}`}>{symbol}</span>;
-  }
+  const src = VARIANTS[variant] || VARIANTS.colorida;
 
   return (
-    <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      {symbol}
-      <span className="flex flex-col justify-center leading-none">
-        <span
-          className={`font-heading font-semibold ${config.wordmark}`}
-          style={{ fontSize: `${size * 0.58}px` }}
-        >
-          Fideliza
-        </span>
-        <span
-          className={`font-heading font-medium uppercase tracking-[0.32em] ${config.tagline}`}
-          style={{ fontSize: `${size * 0.22}px`, marginTop: `${size * 0.08}px` }}
-        >
-          Corretor
-        </span>
-      </span>
-    </span>
+    <img
+      src={src}
+      alt="Fideliza Corretor"
+      style={{ height: `${size}px`, width: 'auto' }}
+      className={`shrink-0 ${className}`}
+    />
   );
 }

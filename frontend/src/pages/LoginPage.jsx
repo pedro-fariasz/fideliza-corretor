@@ -42,7 +42,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col bg-brand-navy">
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <Logo variant="mono-branco" size={40} />
+        <Logo variant="negativo" size={44} />
       </header>
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center gap-12 px-6 py-10 lg:flex-row lg:gap-20">
