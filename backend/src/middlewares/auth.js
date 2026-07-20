@@ -36,8 +36,19 @@ async function authMiddleware(req, res, next) {
       console.error('[auth] erro buscando perfil do usuário', {
         auth_user_id: authUserId,
         error: profileError.message,
+        code: profileError.code,
+        details: profileError.details,
+        hint: profileError.hint,
       });
-      return res.status(500).json({ error: 'Erro ao carregar perfil do usuário.' });
+      // Expõe a mensagem real do banco para diagnóstico (temporário).
+      const partes = [profileError.message, profileError.details, profileError.hint]
+        .filter(Boolean)
+        .join(' | ');
+      return res.status(500).json({
+        error: `Erro ao carregar perfil${profileError.code ? ` [${profileError.code}]` : ''}: ${
+          partes || 'sem detalhe'
+        }`,
+      });
     }
 
     if (!profile) {
