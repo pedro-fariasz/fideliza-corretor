@@ -2,7 +2,10 @@ const express = require('express');
 const cors = require('cors');
 
 const { authMiddleware } = require('./middlewares/auth');
+const { requireAtivo } = require('./middlewares/roles');
+const authRoutes = require('./routes/auth');
 const clientesRoutes = require('./routes/clientes');
+const adminRoutes = require('./routes/admin');
 
 function createApp() {
   const app = express();
@@ -24,9 +27,14 @@ function createApp() {
     res.json({ status: 'ok' });
   });
 
-  // Todas as rotas de /api são autenticadas.
+  // Rotas de autenticação: signup é público; /me aplica auth internamente.
+  // Precisa vir ANTES do authMiddleware global de /api.
+  app.use('/api/auth', authRoutes);
+
+  // Demais rotas de /api são autenticadas.
   app.use('/api', authMiddleware);
-  app.use('/api/clientes', clientesRoutes);
+  app.use('/api/clientes', requireAtivo, clientesRoutes);
+  app.use('/api/admin', adminRoutes);
 
   app.use((req, res) => {
     res.status(404).json({ error: 'Rota não encontrada.' });
