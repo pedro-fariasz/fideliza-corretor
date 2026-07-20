@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+/* Tokens da marca Fideliza Corretor (Tailwind v4 — tokens via @theme, sem tailwind.config.js).
+   brand-amber é destaque pontual (badges/alertas) — nunca fundo grande nem botão primário.
+   Texto sobre brand-blue deve ser branco. */
+@theme {
+  --color-brand-blue: #1e5eff;
+  --color-brand-blue-dark: #174ea6; /* hover/estados pressionados — azul escuro oficial da paleta */
+  --color-brand-navy: #0f1b2d;
+  --color-brand-amber: #f5a623;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-heading: "Poppins", "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+  }
+}
