@@ -7,18 +7,24 @@ import { supabase } from './supabaseClient';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-if (!API_URL) {
-  throw new Error(
-    'Configuração ausente: defina VITE_API_URL no arquivo frontend/.env (veja o .env.example).'
-  );
-}
-
 export class ApiError extends Error {
   constructor(message, status) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
   }
+}
+
+// Verificação em tempo de USO (não no import), para uma env faltando não
+// derrubar a página inteira em tela branca.
+function apiBase() {
+  if (!API_URL) {
+    throw new ApiError(
+      'Configuração ausente: VITE_API_URL não foi definida no build do frontend.',
+      0
+    );
+  }
+  return API_URL;
 }
 
 async function getAccessToken() {
@@ -33,7 +39,7 @@ async function getAccessToken() {
 async function publicRequest(path, options = {}) {
   let response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${apiBase()}${path}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -70,7 +76,7 @@ async function request(path, options = {}) {
 
   let response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${apiBase()}${path}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',

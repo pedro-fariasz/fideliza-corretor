@@ -10,6 +10,7 @@ export function AuthProvider({ children }) {
   // Perfil de aplicação (role/status) vindo do backend (/api/auth/me).
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -26,13 +27,16 @@ export function AuthProvider({ children }) {
 
   const loadProfile = useCallback(async () => {
     setProfileLoading(true);
+    setProfileError(null);
     try {
       const me = await api.me();
       setProfile(me);
       return me;
-    } catch {
+    } catch (err) {
       // Sessão sem perfil vinculado, backend fora do ar, etc. As telas tratam.
+      // Guardamos a mensagem/status reais para exibir um diagnóstico útil.
       setProfile(null);
+      setProfileError({ message: err.message, status: err.status });
       return null;
     } finally {
       setProfileLoading(false);
@@ -82,6 +86,7 @@ export function AuthProvider({ children }) {
     loading,
     profile,
     profileLoading,
+    profileError,
     role: profile ? profile.role : null,
     status: profile ? profile.status : null,
     refreshProfile: loadProfile,
