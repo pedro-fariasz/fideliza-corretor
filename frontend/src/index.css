@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Dark mode como PREFERÊNCIA PÓS-LOGIN (decisão do Pedro — 20/07/2026).
+   Ativado por data-theme="dark" no <html> (persistido em localStorage).
+   As telas de login/cadastro NÃO usam classes dark: — ficam sempre claras. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* Tokens da marca Fideliza Corretor (Tailwind v4 — tokens via @theme, sem tailwind.config.js).
    brand-amber é destaque pontual (badges/alertas) — nunca fundo grande nem botão primário.
    Texto sobre brand-blue deve ser branco. */

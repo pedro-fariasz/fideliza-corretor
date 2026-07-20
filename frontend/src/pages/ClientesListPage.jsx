@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import ScoreBadge from '../components/ScoreBadge';
 import Logo from '../components/Logo';
+import ThemeToggle from '../components/ThemeToggle';
 
 const STATUS_LABELS = {
   ativo: 'Ativo',
@@ -44,20 +45,26 @@ export default function ClientesListPage() {
 
   const tabBase = 'rounded-md px-3 py-1.5 text-sm font-medium';
   const tabActive = 'bg-brand-blue text-white';
-  const tabInactive = 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300';
+  const tabInactive =
+    'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300 ' +
+    'dark:bg-white/5 dark:text-gray-300 dark:border-white/15 dark:hover:bg-white/10';
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm">
+    <div className="min-h-screen bg-gray-100 dark:bg-brand-navy">
+      <header className="bg-white shadow-sm dark:bg-white/5 dark:shadow-none dark:ring-1 dark:ring-white/10">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
-          <Logo variant="colorida" size={36} />
-          <button
-            type="button"
-            onClick={signOut}
-            className="text-sm text-gray-500 hover:text-gray-800"
-          >
-            Sair
-          </button>
+          <Logo variant="colorida" size={36} className="dark:hidden" />
+          <Logo variant="negativo" size={36} className="hidden dark:block" />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={signOut}
+              className="text-sm text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
+            >
+              Sair
+            </button>
+          </div>
         </div>
       </header>
 
@@ -93,7 +100,7 @@ export default function ClientesListPage() {
         </div>
 
         {somenteIncompletos && (
-          <p className="mb-4 text-sm text-gray-500">
+          <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
             Mostrando apenas clientes com score de completude abaixo de 60%.
           </p>
         )}
@@ -112,10 +119,10 @@ export default function ClientesListPage() {
         )}
 
         {loading ? (
-          <p className="py-12 text-center text-gray-500">Carregando clientes...</p>
+          <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando clientes...</p>
         ) : clientes.length === 0 && !error ? (
-          <div className="rounded-lg bg-white p-10 text-center shadow-sm">
-            <p className="text-gray-600">
+          <div className="rounded-lg bg-white p-10 text-center shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
+            <p className="text-gray-600 dark:text-gray-300">
               {somenteIncompletos
                 ? 'Nenhum cadastro incompleto. Tudo em dia! 🎉'
                 : 'Nenhum cliente cadastrado ainda.'}
@@ -134,11 +141,11 @@ export default function ClientesListPage() {
             {clientes.map((cliente) => (
               <li
                 key={cliente.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow-sm"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10"
               >
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-brand-navy">{cliente.nome}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="truncate font-medium text-brand-navy dark:text-white">{cliente.nome}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {cliente.operadora || 'Operadora não informada'}
                   </p>
                 </div>

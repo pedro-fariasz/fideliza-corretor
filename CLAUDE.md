@@ -21,6 +21,33 @@ na camada de **repositories**. TODA query precisa desse filtro, sem exceção.
 `tenant_id` SEMPRE vem do JWT do usuário autenticado — NUNCA do body da requisição.
 **Query sem tenant_id = pare e corrija antes de continuar.**
 
+### Única exceção autorizada (decisão do Pedro — 20/07/2026): painel interno cross-tenant
+A equipe interna da Fideliza (`role` `funcionario`/`admin`, `status` `ativo`) tem um
+**painel de controle interno** que consulta `clientes` de **todos os tenants**. Essa é a
+ÚNICA leitura cross-tenant do sistema. Ela vive num caminho separado e marcado:
+`repositories/internalRepository.js` + middleware `requireInternal`. Corretores continuam
+100% isolados por `tenant_id`. Não replicar esse padrão em nenhum outro lugar — qualquer
+outra query sem `tenant_id` continua sendo bug.
+
+## Autenticação e papéis (Supabase Auth + tabela `users`)
+Um único sistema de login (Supabase Auth) para todos; o que muda é o comportamento no perfil.
+- **`corretor`** — dono do tenant. Cadastro self-service público → `status='ativo'` na hora.
+  Acessa só a própria carteira.
+- **`funcionario`** — equipe interna. Cadastro na área da equipe (`/equipe/*`) → `status='pendente'`.
+  Só acessa o painel interno depois que um `admin` aprova.
+- **`admin`** — equipe interna com poder de aprovar funcionários. Semeado via allowlist
+  `equipe_pre_aprovada` (migration 003) ou aprovado por outro admin.
+- Funcionários/admins pertencem ao **tenant de plataforma** `11111111-1111-1111-1111-111111111111`.
+- `authMiddleware` bloqueia quem não tem perfil; o bloqueio de `status != 'ativo'` é por rota
+  (`requireAtivo`), para o endpoint `/me` ainda responder a funcionário pendente.
+- **NÃO usamos RLS** (mantido): isolamento é app-layer via `tenant_id`. Migrations 001 e 003.
+
+## Tema (decisão do Pedro — 20/07/2026)
+- Telas de login/cadastro são **sempre claras** (regra do fundo branco, sem exceção).
+- **Depois de autenticado**, há um toggle de **dark mode** como preferência pessoal do usuário
+  (persistida em `localStorage`, aplicada via `data-theme="dark"` no `<html>`). Isso não fere a
+  regra do fundo claro porque só existe pós-login.
+
 ## Estrutura de pastas
 ```
 backend/src/
