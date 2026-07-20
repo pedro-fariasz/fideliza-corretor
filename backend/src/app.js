@@ -6,6 +6,7 @@ const { requireAtivo } = require('./middlewares/roles');
 const authRoutes = require('./routes/auth');
 const clientesRoutes = require('./routes/clientes');
 const adminRoutes = require('./routes/admin');
+const internoRoutes = require('./routes/interno');
 
 function createApp() {
   const app = express();
@@ -35,6 +36,8 @@ function createApp() {
   app.use('/api', authMiddleware);
   app.use('/api/clientes', requireAtivo, clientesRoutes);
   app.use('/api/admin', adminRoutes);
+  // Painel interno cross-tenant (gate por requireInternal dentro das rotas).
+  app.use('/api/interno', internoRoutes);
 
   app.use((req, res) => {
     res.status(404).json({ error: 'Rota não encontrada.' });

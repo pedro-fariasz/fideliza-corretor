@@ -9,8 +9,15 @@
 --   tenants — é o admin da corretora, não da plataforma.
 --
 --   Esta migration adiciona um conceito SEPARADO e ortogonal ao role: o
---   ADMINISTRADOR DE PLATAFORMA (você/eu). É a flag `is_platform_admin`, usada
---   EXCLUSIVAMENTE pelas rotas /api/admin/* para enxergar todos os tenants.
+--   ADMINISTRADOR DE PLATAFORMA (você/eu) — o SUPER-ADMIN da plataforma, com
+--   acesso total (vê tudo e faz tudo). É a flag `is_platform_admin`, um nível
+--   ACIMA dos papéis `role` (corretor/funcionario/admin), e reservada às rotas
+--   /api/admin/*.
+--
+--   ⚠️ ALINHAMENTO (decisão do Pedro — 20/07/2026): hoje a flag é um MARCADOR
+--   RESERVADO. O gate do painel interno continua sendo por `role`
+--   (requireInternal / requireAdmin) — NENHUMA rota exige a flag ainda. Ela fica
+--   pronta para o dia em que o super-admin ganhar rotas próprias em /api/admin/*.
 --
 -- ⚠️ RELAÇÃO COM A REGRA DE ISOLAMENTO (decisão do Pedro — 20/07/2026)
 --   A regra nº 1 do projeto continua valendo: TODA query de negócio filtra por

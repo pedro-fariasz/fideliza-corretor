@@ -77,6 +77,7 @@ users
   id, tenant_id, email, nome, role (corretor | funcionario | admin), criado_em
   status (ativo | pendente | recusado | suspenso)
   aprovado_por, aprovado_em   -- auditoria da aprovação manual de funcionário
+  is_platform_admin           -- super-admin de plataforma (migration 004); ortogonal ao role
   -- ⚠️ role aqui NÃO é o antigo (admin | membro). Ver seção "Papéis e Autenticação".
 
 equipe_pre_aprovada
@@ -141,6 +142,13 @@ Funcionários e admins pertencem a ESSE tenant. **O poder cross-tenant do painel
 
 **Allowlist `equipe_pre_aprovada`:** resolve o bootstrap do 1º admin (sem admin, ninguém aprovaria ninguém).
 No signup da equipe, se o e-mail está na allowlist o usuário entra já `ativo` com o `role` indicado; caso contrário, entra como `funcionario` `pendente`.
+
+**`is_platform_admin` — super-admin de plataforma (migration 004):** flag booleana em `users`,
+**ortogonal ao `role`** e um nível **acima** dele. Marca o super-admin da plataforma (Pedro),
+com **acesso total — vê tudo, faz tudo**. Decisão do Pedro (20/07/2026): mantida como **marcador
+reservado**. Os gates do painel interno seguem por `role` (`requireInternal`/`requireAdmin`) e
+**nenhuma rota exige a flag ainda**; quando for usada, será só em `/api/admin/*` e **nunca** para
+bypassar `tenant_id`. Não confundir com o `role` `admin` (admin interno que aprova funcionários).
 
 **Fluxo de aprovação de funcionário (implementado):**
 1. Funcionário se cadastra em `/api/auth/signup/equipe` → `status='pendente'`.
@@ -288,3 +296,5 @@ negativa. Não recriar nem alterar as artes.
 ## Changelog
 
 - **20/07/2026** — Reconciliação doc↔código do painel interno da equipe: documentados os três papéis (corretor/funcionario/admin), aprovação de funcionário, tenant de plataforma fixo e allowlist `equipe_pre_aprovada`; registrada a exceção de isolamento (`internalRepository.js` sob `requireInternal` como única leitura cross-tenant); adicionada a seção de Identidade Visual (tokens de cor, Poppins/Inter, regra de fundo claro).
+- **20/07/2026** — `is_platform_admin` (migration 004) alinhado como **super-admin de plataforma** (acesso total, ortogonal ao `role`), mantido como marcador reservado — o gate do painel interno segue por `role`.
+- **20/07/2026** — Painel interno v2: novos endpoints `GET /api/interno/resumo` e `GET /api/interno/clientes` (atrás de `requireInternal`, reaproveitando `internalRepository`); frontend com dois shells de navegação por role — corretor (Início/Pendências/Clientes/Campanhas/Configurações) e equipe interna (Corretores + Kanban de clientes por corretor, leitura sem drag-and-drop).
