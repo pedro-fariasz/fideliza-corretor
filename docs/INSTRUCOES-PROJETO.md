@@ -74,7 +74,14 @@ tenants
   id, nome, email, plano, status, criado_em, consultas_mes_atual
 
 users
-  id, tenant_id, email, role (admin | membro), criado_em
+  id, tenant_id, email, nome, role (corretor | funcionario | admin), criado_em
+  status (ativo | pendente | recusado | suspenso)
+  aprovado_por, aprovado_em   -- auditoria da aprovação manual de funcionário
+  -- ⚠️ role aqui NÃO é o antigo (admin | membro). Ver seção "Papéis e Autenticação".
+
+equipe_pre_aprovada
+  id, email, role (funcionario | admin), criado_em
+  -- allowlist de bootstrap da equipe interna (migration 003)
 
 sessoes_whatsapp
   id, numero_telefone, tenant_id, contexto_json, ultima_atividade
@@ -114,6 +121,57 @@ historico_disparos
 templates
   id, tenant_id, tipo, canal, conteudo, ativo
 ```
+
+## Papéis e Autenticação
+
+> Decisão do Pedro — 20/07/2026. Já implementado (migration 003 + `authService`, `roles.js`).
+> Login é único para todos via Supabase Auth; o que muda é o comportamento por papel.
+
+**Três papéis (coluna `users.role`):**
+
+| Papel | Como nasce | Tenant | Acesso |
+|---|---|---|---|
+| `corretor` | Self-signup público (`POST /api/auth/signup/corretor`) → `status='ativo'` na hora, cria o próprio tenant | Tenant próprio | Só a própria carteira |
+| `funcionario` | Signup na área da equipe (`POST /api/auth/signup/equipe`) → `status='pendente'` | Tenant de plataforma | Painel interno **após** aprovação de um admin |
+| `admin` | Semeado via allowlist `equipe_pre_aprovada`, ou aprovado por outro admin | Tenant de plataforma | Painel interno + aprovar/recusar funcionários |
+
+**Tenant de plataforma (UUID fixo):** `11111111-1111-1111-1111-111111111111`
+(`Fideliza — Plataforma (interno)`, migration 003, constante `PLATFORM_TENANT_ID`).
+Funcionários e admins pertencem a ESSE tenant. **O poder cross-tenant do painel interno vem do ROLE, não deste tenant.**
+
+**Allowlist `equipe_pre_aprovada`:** resolve o bootstrap do 1º admin (sem admin, ninguém aprovaria ninguém).
+No signup da equipe, se o e-mail está na allowlist o usuário entra já `ativo` com o `role` indicado; caso contrário, entra como `funcionario` `pendente`.
+
+**Fluxo de aprovação de funcionário (implementado):**
+1. Funcionário se cadastra em `/api/auth/signup/equipe` → `status='pendente'`.
+2. `GET /api/auth/me` responde mesmo pendente (o frontend mostra "aguardando aprovação").
+3. Admin lista pendentes em `GET /api/admin/equipe/pendentes` e decide via
+   `POST /api/admin/equipe/:id/aprovar` ou `.../recusar` (grava `aprovado_por`/`aprovado_em`).
+
+**Guardas por middleware (`middlewares/roles.js`, sempre depois de `authMiddleware`):**
+- `requireAtivo` — bloqueia `status != 'ativo'` (funcionário pendente/recusado/suspenso).
+- `requireInternal` — equipe interna ativa (`funcionario` ou `admin`): acesso ao painel interno.
+- `requireAdmin` — só `admin` ativo: aprovar/recusar funcionários.
+
+`authMiddleware` extrai `tenant_id` e o perfil do JWT (nunca do body); o bloqueio de status
+é por rota (`requireAtivo`), para o `/me` ainda responder a funcionário pendente.
+
+> **Não usamos RLS** (mantido): isolamento é app-layer via `tenant_id`.
+
+## Exceção de Isolamento de Tenant
+
+> Decisão do Pedro — 20/07/2026. Esta é a **única exceção autorizada** à regra crítica de isolamento.
+
+O **painel interno** da equipe Fideliza consulta a tabela `clientes` de **todos os tenants**
+(controle interno cross-tenant). Essa é a **ÚNICA leitura sem `WHERE tenant_id`** do sistema.
+Ela vive num caminho separado e explicitamente marcado:
+
+- **`repositories/internalRepository.js`** — único repositório que consulta `clientes` sem filtrar por `tenant_id` (`listAllClientes`, `resumoPorTenant`).
+- Protegido pelo middleware **`requireInternal`** e exposto **apenas** sob `/api/admin/*` (ex.: `GET /api/admin/relatorio/clientes`).
+
+**Regras invioláveis:**
+- Corretores continuam 100% isolados por `tenant_id`.
+- **Nenhum outro lugar do código pode repetir esse padrão.** Fora do `internalRepository.js`, qualquer query sem `tenant_id` continua sendo bug — pare e corrija.
 
 ## Regras de Negócio Críticas
 
@@ -184,6 +242,32 @@ Calculado no cron diário, SQL puro, sem ML:
 
 **Regra: não pular fases. Cada fase tem um teste com usuário real antes de avançar.**
 
+## Identidade Visual
+
+> Decisão do Pedro — 20/07/2026. Tokens definidos em `frontend/src/index.css` (Tailwind v4, via `@theme` — sem `tailwind.config.js`).
+
+**Fundo branco/claro é o padrão de TODAS as telas, sem exceção** (login/cadastro incluídos).
+Depois de autenticado existe um toggle de **dark mode** como preferência pessoal (persistida em
+`localStorage`, aplicada via `data-theme="dark"` no `<html>`) — isso não fere a regra do fundo
+claro porque só existe pós-login. As telas de login/cadastro **não** usam classes `dark:`.
+
+**Tokens de cor:**
+
+| Token | Hex | Uso |
+|---|---|---|
+| `brand-blue` | `#1E5EFF` | Primária — botões, links, estados ativos |
+| `brand-blue-dark` | `#174EA6` | Hover / estados pressionados |
+| `brand-navy` | `#0F1B2D` | Texto de destaque |
+| `brand-amber` | `#F5A623` | Destaque pontual (badges/alertas) — **nunca** fundo grande nem botão primário |
+
+- Texto sobre `brand-blue` é sempre **branco**.
+
+**Tipografia:** headings em **Poppins** (`--font-heading`), corpo em **Inter** (`--font-sans`).
+
+**Logos:** originais em `frontend/src/assets/logo/`, versões web em `assets/logo/web/`,
+componente `<Logo />` (`frontend/src/components/Logo.jsx`). Fundo claro: colorida; fundo escuro:
+negativa. Não recriar nem alterar as artes.
+
 ## Convenções de Código
 
 - **Idioma do código:** inglês para variáveis/funções, português para conteúdo voltado ao usuário (mensagens, templates, UI)
@@ -200,3 +284,7 @@ Calculado no cron diário, SQL puro, sem ML:
 - Se uma feature nova surgir, avalie contra a filosofia "set and forget" e a fase atual antes de implementar
 - Me lembre de testar com minha mãe ao final de cada fase
 - Custos importam: estou bootstrapped. Sempre estime custo operacional de decisões novas
+
+## Changelog
+
+- **20/07/2026** — Reconciliação doc↔código do painel interno da equipe: documentados os três papéis (corretor/funcionario/admin), aprovação de funcionário, tenant de plataforma fixo e allowlist `equipe_pre_aprovada`; registrada a exceção de isolamento (`internalRepository.js` sob `requireInternal` como única leitura cross-tenant); adicionada a seção de Identidade Visual (tokens de cor, Poppins/Inter, regra de fundo claro).
