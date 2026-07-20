@@ -1,22 +1,23 @@
 import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Logo from '../components/Logo';
+import { homePathFor } from '../utils/homePath';
 
 const inputClasses =
   'w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 ' +
   'placeholder:text-gray-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40';
 
 export default function LoginPage() {
-  const { session, loading, signIn } = useAuth();
+  const { session, loading, profile, signIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  if (!loading && session) {
-    return <Navigate to="/" replace />;
+  if (!loading && session && profile) {
+    return <Navigate to={homePathFor(profile)} replace />;
   }
 
   async function handleSubmit(event) {
@@ -142,7 +143,24 @@ export default function LoginPage() {
                 {!submitting && <span aria-hidden="true">→</span>}
               </button>
             </form>
+
+            <p className="mt-6 text-center text-sm text-gray-500">
+              Ainda não tem conta?{' '}
+              <Link
+                to="/cadastro"
+                className="font-semibold text-brand-blue hover:text-brand-blue-dark"
+              >
+                Criar conta
+              </Link>
+            </p>
           </div>
+
+          <p className="mt-4 text-center text-xs text-gray-400">
+            É da equipe Fideliza?{' '}
+            <Link to="/equipe/login" className="font-medium text-gray-500 underline hover:text-gray-700">
+              Acesso da equipe
+            </Link>
+          </p>
         </section>
       </main>
 
