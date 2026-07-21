@@ -363,6 +363,14 @@ export const api = {
   posvendasRedefinirMensagem(categoria, etapa) {
     return request(`/api/posvendas/mensagens/${categoria}/${etapa}/redefinir`, { method: 'POST' });
   },
+
+  // --- BI de Carteira / Inteligência (Fase 3) -------------------------------
+  biCarteira(params = {}) {
+    return request(`/api/bi-carteira${toQuery(params)}`);
+  },
+  biCarteiraCorretores() {
+    return request('/api/bi-carteira/corretores');
+  },
 };
 
 // Monta querystring a partir de um objeto, ignorando vazios/undefined.
