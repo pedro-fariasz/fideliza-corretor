@@ -319,6 +319,50 @@ export const api = {
   cancelarApolice(id, motivo) {
     return request(`/api/carteira/apolices/${id}/cancelar`, { method: 'PATCH', body: JSON.stringify({ motivo }) });
   },
+
+  // --- Pós-Vendas (Fase 2) --------------------------------------------------
+  posvendasCategorias() {
+    return request('/api/posvendas/categorias');
+  },
+  posvendasPipeline(params = {}) {
+    return request(`/api/posvendas/pipeline${toQuery(params)}`);
+  },
+  posvendasLista(params = {}) {
+    return request(`/api/posvendas/lista${toQuery(params)}`);
+  },
+  posvendasMarcarFeito(apoliceId, observacao) {
+    return request(`/api/posvendas/apolices/${apoliceId}/feito`, {
+      method: 'POST',
+      body: JSON.stringify({ observacao: observacao || null }),
+    });
+  },
+  posvendasCrossSell(apoliceId) {
+    return request(`/api/posvendas/apolices/${apoliceId}/cross-sell`);
+  },
+  posvendasMensagem(apoliceId, etapa) {
+    return request(`/api/posvendas/apolices/${apoliceId}/mensagem${toQuery({ etapa })}`);
+  },
+  posvendasFluxo(categoria) {
+    return request(`/api/posvendas/fluxos/${categoria}`);
+  },
+  posvendasCriarEtapa(categoria, payload) {
+    return request(`/api/posvendas/fluxos/${categoria}/etapas`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  posvendasAtualizarEtapa(etapaId, payload) {
+    return request(`/api/posvendas/etapas/${etapaId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  },
+  posvendasRestaurarFluxo(categoria) {
+    return request(`/api/posvendas/fluxos/${categoria}/restaurar`, { method: 'POST' });
+  },
+  posvendasMensagens(categoria) {
+    return request(`/api/posvendas/mensagens/${categoria}`);
+  },
+  posvendasSalvarMensagem(categoria, etapa, texto) {
+    return request(`/api/posvendas/mensagens/${categoria}/${etapa}`, { method: 'PUT', body: JSON.stringify({ texto }) });
+  },
+  posvendasRedefinirMensagem(categoria, etapa) {
+    return request(`/api/posvendas/mensagens/${categoria}/${etapa}/redefinir`, { method: 'POST' });
+  },
 };
 
 // Monta querystring a partir de um objeto, ignorando vazios/undefined.
