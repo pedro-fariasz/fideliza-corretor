@@ -7,6 +7,7 @@
 const express = require('express');
 const tenantsRepository = require('../repositories/tenantsRepository');
 const carteiraService = require('../services/carteiraService');
+const posvendasService = require('../services/posvendasService');
 
 const router = express.Router();
 
@@ -35,6 +36,27 @@ router.post('/recalcular-carteira', requireJobSecret, async (req, res) => {
     return res.json({ tenants: tenantIds.length, apolices_atualizadas: total, erros });
   } catch (err) {
     console.error('[job.recalcular-carteira] falhou', { error: err.message });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Recalcula a etapa de pós-venda de todas as apólices (move a esteira). Idempotente.
+router.post('/recalcular-posvendas', requireJobSecret, async (req, res) => {
+  try {
+    const tenantIds = await tenantsRepository.listCorretorIds();
+    let total = 0;
+    const erros = [];
+    for (const tenantId of tenantIds) {
+      try {
+        const r = await posvendasService.recalcularEtapas(tenantId);
+        total += r.apolices_movidas;
+      } catch (e) {
+        erros.push({ tenant_id: tenantId, error: e.message });
+      }
+    }
+    return res.json({ tenants: tenantIds.length, apolices_movidas: total, erros });
+  } catch (err) {
+    console.error('[job.recalcular-posvendas] falhou', { error: err.message });
     return res.status(500).json({ error: err.message });
   }
 });

@@ -7,6 +7,21 @@ const comissoesRepository = require('../repositories/comissoesRepository');
 const comissaoService = require('./comissaoService');
 const metrics = require('./carteiraMetricsService');
 const { resolverDonoIds, donoPermitido } = require('./escopoService');
+const { FEATURE_FLAGS } = require('../config/constants');
+
+// Fase 2: garante a esteira de pós-venda da categoria do produto. Não-fatal e
+// gated pela flag — nunca quebra a criação/renovação da apólice.
+async function inicializarPosvenda(tenantId, produto) {
+  if (!FEATURE_FLAGS.posvendas) return;
+  try {
+    const posvendasService = require('./posvendasService');
+    await posvendasService.inicializarApolice(tenantId, produto);
+  } catch (err) {
+    console.error('[apolicesService] apólice ok, mas falhou ao inicializar pós-venda', {
+      tenant_id: tenantId, error: err.message,
+    });
+  }
+}
 
 const FORMAS_PAGAMENTO = ['debito', 'boleto', 'pix', 'cartao', 'dinheiro', 'outro'];
 const MOTIVOS_CANCELAMENTO = ['preco', 'concorrencia', 'sinistro', 'mudanca_necessidade', 'insatisfacao', 'sem_contato', 'outro'];
@@ -65,7 +80,7 @@ async function gerarComissoes(tenantId, vendaId, valor, dataVenda, produto) {
 async function gerarDeVenda(tenantId, { venda, produto, cliente_id, corretor_id, data_inicio, data_vencimento }) {
   const inicio = data_inicio || venda.data_venda || hoje();
   const vencimento = data_vencimento || somarMeses(inicio, produto.vigencia_meses || 12);
-  return apolicesRepository.create(tenantId, {
+  const apolice = await apolicesRepository.create(tenantId, {
     cliente_id,
     produto_id: produto.id,
     corretor_id: corretor_id || venda.vendedor_id || null,
@@ -76,6 +91,8 @@ async function gerarDeVenda(tenantId, { venda, produto, cliente_id, corretor_id,
     data_vencimento: vencimento,
     status: 'ativa',
   });
+  await inicializarPosvenda(tenantId, produto);
+  return apolice;
 }
 
 // Chamado por vendasService após criar a venda no funil (lead obrigatório aqui).
@@ -190,6 +207,7 @@ async function renovar(tenantId, apoliceId, input, usuario) {
   });
 
   await apolicesRepository.update(tenantId, mae.id, { status: 'renovada' });
+  await inicializarPosvenda(tenantId, produto);
   return nova;
 }
 
