@@ -29,8 +29,11 @@ async function findById(tenantId, id) {
   return data;
 }
 
+// Embute nome do cliente e do produto (para as telas de carteira).
+const CAMPOS_LIST = `${CAMPOS}, cliente:carteira_clientes(id,nome), produto:produtos(id,nome)`;
+
 async function list(tenantId, filters = {}) {
-  let q = supabase.from('apolices').select(CAMPOS).eq('tenant_id', tenantId);
+  let q = supabase.from('apolices').select(CAMPOS_LIST).eq('tenant_id', tenantId);
   if (filters.status) q = q.eq('status', filters.status);
   if (filters.cliente_id) q = q.eq('cliente_id', filters.cliente_id);
   if (filters.corretor_id) q = q.eq('corretor_id', filters.corretor_id);
