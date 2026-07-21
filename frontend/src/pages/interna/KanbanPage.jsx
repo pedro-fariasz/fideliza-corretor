@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { MessageCircle, Mail } from 'lucide-react';
 import { api } from '../../services/api';
+import KanbanBoard from '../../components/KanbanBoard';
 
 // Colunas do Kanban. Ordem = prioridade de encaixe (cada card entra na PRIMEIRA
 // coluna cujo `match` bate). Fácil de reconfigurar depois: é só editar esta lista.
@@ -22,15 +23,6 @@ const COLUNAS = [
     match: (c) => c.status === 'ativo',
   },
 ];
-
-function distribuir(clientes) {
-  const baldes = Object.fromEntries(COLUNAS.map((col) => [col.id, []]));
-  for (const c of clientes) {
-    const col = COLUNAS.find((col) => col.match(c)) || COLUNAS[COLUNAS.length - 1];
-    baldes[col.id].push(c);
-  }
-  return baldes;
-}
 
 function formatData(iso) {
   if (!iso) return '—';
@@ -121,7 +113,6 @@ function KanbanDoCorretor({ tenantId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId]);
 
-  const baldes = useMemo(() => distribuir(clientes), [clientes]);
   const corretor = clientes[0]?.tenant?.nome || 'Corretor';
 
   return (
@@ -149,27 +140,12 @@ function KanbanDoCorretor({ tenantId }) {
       {loading ? (
         <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando...</p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {COLUNAS.map((col) => (
-            <div key={col.id} className="flex flex-col">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-heading text-sm font-semibold text-brand-navy dark:text-white">
-                  {col.titulo}
-                </h3>
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-white/10 dark:text-gray-300">
-                  {baldes[col.id].length}
-                </span>
-              </div>
-              <div className="flex flex-1 flex-col gap-2 rounded-lg bg-gray-50 p-2 dark:bg-white/[0.03]">
-                {baldes[col.id].length === 0 ? (
-                  <p className="px-2 py-6 text-center text-xs text-gray-400">Vazio</p>
-                ) : (
-                  baldes[col.id].map((c) => <Card key={c.id} cliente={c} />)
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        <KanbanBoard
+          columns={COLUNAS}
+          items={clientes}
+          getKey={(c) => c.id}
+          renderCard={(c) => <Card cliente={c} />}
+        />
       )}
     </div>
   );
