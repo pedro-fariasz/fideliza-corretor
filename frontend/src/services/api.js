@@ -179,4 +179,114 @@ export const api = {
     const query = qs.toString() ? `?${qs.toString()}` : '';
     return request(`/api/interno/clientes${query}`);
   },
+
+  // =========================================================================
+  // CRM de vendas (MVP)
+  // =========================================================================
+
+  // --- Dashboard ------------------------------------------------------------
+  dashboard(params = {}) {
+    return request(`/api/dashboard${toQuery(params)}`);
+  },
+
+  // --- Produtos -------------------------------------------------------------
+  listarProdutos(params = {}) {
+    return request(`/api/produtos${toQuery(params)}`);
+  },
+  criarProduto(payload) {
+    return request('/api/produtos', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  atualizarProduto(id, payload) {
+    return request(`/api/produtos/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  desativarProduto(id) {
+    return request(`/api/produtos/${id}`, { method: 'DELETE' });
+  },
+
+  // --- Leads + funil --------------------------------------------------------
+  listarLeads(params = {}) {
+    return request(`/api/leads${toQuery(params)}`);
+  },
+  criarLead(payload) {
+    return request('/api/leads', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  obterLead(id) {
+    return request(`/api/leads/${id}`);
+  },
+  atualizarLead(id, payload) {
+    return request(`/api/leads/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  mudarEstagio(id, estagio) {
+    return request(`/api/leads/${id}/estagio`, {
+      method: 'PATCH',
+      body: JSON.stringify({ estagio }),
+    });
+  },
+  mudarStatusLead(id, status, motivo_perda) {
+    return request(`/api/leads/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, motivo_perda }),
+    });
+  },
+  listarInteracoes(id) {
+    return request(`/api/leads/${id}/interacoes`);
+  },
+  registrarInteracao(id, payload) {
+    return request(`/api/leads/${id}/interacoes`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  // --- Vendas ---------------------------------------------------------------
+  listarVendas(params = {}) {
+    return request(`/api/vendas${toQuery(params)}`);
+  },
+  criarVenda(payload) {
+    return request('/api/vendas', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  obterVenda(id) {
+    return request(`/api/vendas/${id}`);
+  },
+  cancelarVenda(id) {
+    return request(`/api/vendas/${id}/cancelar`, { method: 'PATCH' });
+  },
+
+  // --- Comissões ------------------------------------------------------------
+  listarComissoes(params = {}) {
+    return request(`/api/comissoes${toQuery(params)}`);
+  },
+  receberComissao(id, data_recebida) {
+    return request(`/api/comissoes/${id}/receber`, {
+      method: 'PATCH',
+      body: JSON.stringify({ data_recebida }),
+    });
+  },
+  estornarComissao(id) {
+    return request(`/api/comissoes/${id}/estornar`, { method: 'PATCH' });
+  },
+
+  // --- Agenda ---------------------------------------------------------------
+  listarAgenda(params = {}) {
+    return request(`/api/agenda${toQuery(params)}`);
+  },
+  criarCompromisso(payload) {
+    return request('/api/agenda', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  atualizarCompromisso(id, payload) {
+    return request(`/api/agenda/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  removerCompromisso(id) {
+    return request(`/api/agenda/${id}`, { method: 'DELETE' });
+  },
 };
+
+// Monta querystring a partir de um objeto, ignorando vazios/undefined.
+function toQuery(params = {}) {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null && v !== '') qs.set(k, String(v));
+  }
+  const s = qs.toString();
+  return s ? `?${s}` : '';
+}

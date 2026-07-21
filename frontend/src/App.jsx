@@ -11,13 +11,14 @@ import EquipeLoginPage from './pages/EquipeLoginPage';
 import EquipeCadastroPage from './pages/EquipeCadastroPage';
 import AguardandoAprovacaoPage from './pages/AguardandoAprovacaoPage';
 
-// Corretor (shell com sidebar)
-import InicioPage from './pages/corretor/InicioPage';
-import PendenciasPage from './pages/corretor/PendenciasPage';
-import ClientesPage from './pages/corretor/ClientesPage';
-import CampanhasPage from './pages/corretor/CampanhasPage';
+// Corretor (shell com sidebar) — CRM de vendas
+import DashboardPage from './pages/corretor/DashboardPage';
+import FunilPage from './pages/corretor/FunilPage';
+import LeadsPage from './pages/corretor/LeadsPage';
+import ProdutosPage from './pages/corretor/ProdutosPage';
+import VendasPage from './pages/corretor/VendasPage';
+import AgendaPage from './pages/corretor/AgendaPage';
 import ConfiguracoesPage from './pages/corretor/ConfiguracoesPage';
-import ClienteFormPage from './pages/ClienteFormPage';
 
 // Equipe interna (shell com sidebar)
 import CorretoresPage from './pages/interna/CorretoresPage';
@@ -46,22 +47,14 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/" element={<InicioPage />} />
-            <Route path="/pendencias" element={<PendenciasPage />} />
-            <Route path="/clientes" element={<ClientesPage />} />
-            <Route path="/campanhas" element={<CampanhasPage />} />
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/funil" element={<FunilPage />} />
+            <Route path="/leads" element={<LeadsPage />} />
+            <Route path="/produtos" element={<ProdutosPage />} />
+            <Route path="/vendas" element={<VendasPage />} />
+            <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/configuracoes" element={<ConfiguracoesPage />} />
           </Route>
-
-          {/* Corretor — formulário de cliente (tela cheia, fora do shell) */}
-          <Route
-            path="/clientes/novo"
-            element={
-              <ProtectedRoute roles={['corretor']}>
-                <ClienteFormPage />
-              </ProtectedRoute>
-            }
-          />
 
           {/* Equipe interna — shell com sidebar (painel cross-tenant) */}
           <Route

@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Home, Clock, Users, Megaphone, Settings } from 'lucide-react';
+import { Home, Filter, Users, Package, DollarSign, Calendar, Settings } from 'lucide-react';
 import SidebarShell from './SidebarShell';
 
 // Shell de navegação do CORRETOR (sidebar). Decidido pelo role em App.jsx —
@@ -7,9 +7,11 @@ import SidebarShell from './SidebarShell';
 // Ícones: lucide-react (linear, cor herdada do texto) — nunca emoji.
 const ITEMS = [
   { to: '/', label: 'Início', icon: Home, end: true },
-  { to: '/pendencias', label: 'Pendências', icon: Clock },
-  { to: '/clientes', label: 'Clientes', icon: Users },
-  { to: '/campanhas', label: 'Campanhas', icon: Megaphone },
+  { to: '/funil', label: 'Funil', icon: Filter },
+  { to: '/leads', label: 'Leads', icon: Users },
+  { to: '/produtos', label: 'Produtos', icon: Package },
+  { to: '/vendas', label: 'Vendas', icon: DollarSign },
+  { to: '/agenda', label: 'Agenda', icon: Calendar },
   { to: '/configuracoes', label: 'Configurações', icon: Settings },
 ];
 
