@@ -40,39 +40,53 @@ async function listAllClientes(filters = {}) {
   return data || [];
 }
 
-// Resumo agregado por corretor (tenant) para o topo do painel.
+// Resumo agregado por corretor para o topo do painel.
+// IMPORTANTE: a lista de corretores vem de `users` (role 'corretor'), NÃO de
+// `clientes` — assim um corretor recém-cadastrado, ainda SEM clientes, também
+// aparece (com 0 clientes / 0%). A equipe de plataforma (funcionario/admin)
+// fica de fora naturalmente, por não ter role 'corretor'.
+// Leitura cross-tenant contida neste arquivo sancionado (atrás de requireInternal).
 async function resumoPorTenant() {
-  const { data, error } = await supabase
+  // 1) Todos os corretores (cada um dono do seu tenant).
+  const { data: corretores, error: uErr } = await supabase
+    .from('users')
+    .select('tenant_id, nome, email, criado_em')
+    .eq('role', 'corretor');
+  if (uErr) throw uErr;
+
+  // 2) Clientes, para agregar contagem/score por tenant.
+  const { data: clientes, error: cErr } = await supabase
     .from('clientes')
-    .select('tenant_id, score_completude, status, tenant:tenants(nome)');
+    .select('tenant_id, score_completude');
+  if (cErr) throw cErr;
 
-  if (error) throw error;
-
-  const mapa = new Map();
-  for (const row of data || []) {
-    const key = row.tenant_id;
-    if (!mapa.has(key)) {
-      mapa.set(key, {
-        tenant_id: key,
-        corretor: row.tenant ? row.tenant.nome : '—',
-        total_clientes: 0,
-        soma_score: 0,
-        incompletos: 0,
-      });
-    }
-    const acc = mapa.get(key);
-    acc.total_clientes += 1;
-    acc.soma_score += row.score_completude || 0;
-    if ((row.score_completude || 0) < 60) acc.incompletos += 1;
+  const agg = new Map(); // tenant_id -> { total, soma, incompletos }
+  for (const row of clientes || []) {
+    const k = row.tenant_id;
+    if (!agg.has(k)) agg.set(k, { total: 0, soma: 0, incompletos: 0 });
+    const a = agg.get(k);
+    a.total += 1;
+    a.soma += row.score_completude || 0;
+    if ((row.score_completude || 0) < 60) a.incompletos += 1;
   }
 
-  return Array.from(mapa.values()).map((t) => ({
-    tenant_id: t.tenant_id,
-    corretor: t.corretor,
-    total_clientes: t.total_clientes,
-    score_medio: t.total_clientes ? Math.round(t.soma_score / t.total_clientes) : 0,
-    incompletos: t.incompletos,
-  }));
+  const vistos = new Set();
+  const out = [];
+  for (const c of corretores || []) {
+    if (vistos.has(c.tenant_id)) continue; // 1 linha por tenant
+    vistos.add(c.tenant_id);
+    const a = agg.get(c.tenant_id) || { total: 0, soma: 0, incompletos: 0 };
+    out.push({
+      tenant_id: c.tenant_id,
+      corretor: c.nome || c.email || '—',
+      total_clientes: a.total,
+      score_medio: a.total ? Math.round(a.soma / a.total) : 0,
+      incompletos: a.incompletos,
+    });
+  }
+
+  out.sort((x, y) => x.corretor.localeCompare(y.corretor, 'pt-BR'));
+  return out;
 }
 
 // Contagem de disparos por cliente e por canal (WhatsApp/e-mail), para o card
