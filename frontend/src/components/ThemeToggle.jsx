@@ -1,6 +1,8 @@
+import { Sun, Moon } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 
 // Toggle de dark mode — usado nas telas autenticadas (nunca no login).
+// Ícone lucide (cor herdada do texto) — sem emoji.
 export default function ThemeToggle({ className = '' }) {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
@@ -18,7 +20,7 @@ export default function ThemeToggle({ className = '' }) {
         className
       }
     >
-      <span aria-hidden="true">{isDark ? '☀️' : '🌙'}</span>
+      {isDark ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
     </button>
   );
 }

@@ -1,14 +1,16 @@
 import { Outlet, useLocation } from 'react-router-dom';
+import { Home, Clock, Users, Megaphone, Settings } from 'lucide-react';
 import SidebarShell from './SidebarShell';
 
 // Shell de navegação do CORRETOR (sidebar). Decidido pelo role em App.jsx —
 // nunca aparece junto com o menu da equipe interna.
+// Ícones: lucide-react (linear, cor herdada do texto) — nunca emoji.
 const ITEMS = [
-  { to: '/', label: 'Início', icon: '🏠', end: true },
-  { to: '/pendencias', label: 'Pendências', icon: '⏰' },
-  { to: '/clientes', label: 'Clientes', icon: '👥' },
-  { to: '/campanhas', label: 'Campanhas', icon: '📣' },
-  { to: '/configuracoes', label: 'Configurações', icon: '⚙️' },
+  { to: '/', label: 'Início', icon: Home, end: true },
+  { to: '/pendencias', label: 'Pendências', icon: Clock },
+  { to: '/clientes', label: 'Clientes', icon: Users },
+  { to: '/campanhas', label: 'Campanhas', icon: Megaphone },
+  { to: '/configuracoes', label: 'Configurações', icon: Settings },
 ];
 
 export default function CorretorLayout() {

@@ -40,7 +40,7 @@ export default function PendenciasPage() {
   if (urgente.length === 0 && atencao.length === 0) {
     return (
       <div className="rounded-lg bg-white p-10 text-center text-gray-600 shadow-sm dark:bg-white/5 dark:text-gray-300 dark:ring-1 dark:ring-white/10">
-        Nenhuma pendência. Carteira em dia! 🎉
+        Nenhuma pendência. Carteira em dia.
       </div>
     );
   }

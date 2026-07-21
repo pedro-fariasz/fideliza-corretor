@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { MessageCircle, Mail } from 'lucide-react';
 import { api } from '../../services/api';
 
 // Colunas do Kanban. Ordem = prioridade de encaixe (cada card entra na PRIMEIRA
@@ -206,12 +207,18 @@ function Card({ cliente: c }) {
         </div>
       </dl>
 
-      <div className="mt-2 flex gap-2 border-t border-gray-100 pt-2 text-xs dark:border-white/10">
-        <span className="text-gray-500 dark:text-gray-400" title="Disparos por WhatsApp">
-          💬 {disparos.whatsapp}
+      <div className="mt-2 flex gap-3 border-t border-gray-100 pt-2 text-xs dark:border-white/10">
+        <span
+          className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400"
+          title="Disparos por WhatsApp"
+        >
+          <MessageCircle size={13} aria-hidden="true" /> {disparos.whatsapp}
         </span>
-        <span className="text-gray-500 dark:text-gray-400" title="Disparos por e-mail">
-          ✉️ {disparos.email}
+        <span
+          className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400"
+          title="Disparos por e-mail"
+        >
+          <Mail size={13} aria-hidden="true" /> {disparos.email}
         </span>
       </div>
     </div>

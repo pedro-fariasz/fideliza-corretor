@@ -70,7 +70,7 @@ export default function InicioPage() {
           {r.inadimplentes}
         </p>
         {r.inadimplentes === 0 && (
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Ninguém em atraso. 🎉</p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Ninguém em atraso.</p>
         )}
       </section>
 
