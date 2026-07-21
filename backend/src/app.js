@@ -5,6 +5,7 @@ const { authMiddleware } = require('./middlewares/auth');
 const { requireAtivo } = require('./middlewares/roles');
 const authRoutes = require('./routes/auth');
 const clientesRoutes = require('./routes/clientes');
+const produtosRoutes = require('./routes/produtos');
 const adminRoutes = require('./routes/admin');
 const internoRoutes = require('./routes/interno');
 
@@ -35,6 +36,7 @@ function createApp() {
   // Demais rotas de /api são autenticadas.
   app.use('/api', authMiddleware);
   app.use('/api/clientes', requireAtivo, clientesRoutes);
+  app.use('/api/produtos', requireAtivo, produtosRoutes);
   app.use('/api/admin', adminRoutes);
   // Painel interno cross-tenant (gate por requireInternal dentro das rotas).
   app.use('/api/interno', internoRoutes);
