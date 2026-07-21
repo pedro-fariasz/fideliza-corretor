@@ -43,7 +43,7 @@ export default function InicioPage() {
   const pctIncompletos = r.total ? Math.round((r.incompletos / r.total) * 100) : 0;
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {/* Bloco 1 — destaque primário: métrica grande com barra de acento azul */}
       <section className="flex items-stretch gap-4 rounded-xl bg-white p-5 shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
         <div className="w-1.5 rounded-full bg-brand-blue" aria-hidden="true" />
