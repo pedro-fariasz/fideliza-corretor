@@ -4,6 +4,7 @@ const produtosRepository = require('../repositories/produtosRepository');
 const leadsRepository = require('../repositories/leadsRepository');
 const interacoesRepository = require('../repositories/interacoesRepository');
 const comissaoService = require('./comissaoService');
+const { resolverDonoIds, donoPermitido } = require('./escopoService');
 
 const FORMAS_PAGAMENTO = ['debito', 'boleto', 'pix', 'cartao', 'dinheiro', 'outro'];
 const DATA_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -77,11 +78,17 @@ async function criar(tenantId, input, usuario) {
   const produto = await produtosRepository.findById(tenantId, body.produto_id);
   if (!produto) throw new ValidationError('Produto não encontrado nesta conta.');
 
-  // lead é opcional, mas se vier precisa ser do tenant.
+  // lead é opcional, mas se vier precisa ser do tenant E do escopo do usuário.
   let lead = null;
   if (body.lead_id) {
     lead = await leadsRepository.findById(tenantId, body.lead_id);
     if (!lead) throw new ValidationError('Lead não encontrado nesta conta.');
+    if (usuario) {
+      const donoIds = await resolverDonoIds(usuario, 'leads', 'escrever');
+      if (!donoPermitido(donoIds, lead.dono_id)) {
+        throw new ValidationError('Você não pode registrar venda para um lead fora da sua carteira.');
+      }
+    }
   }
 
   // --- calcula as parcelas ANTES de tocar o banco (função pura) ---
@@ -150,13 +157,18 @@ async function criar(tenantId, input, usuario) {
   return { ...venda, comissoes };
 }
 
-async function listar(tenantId, filtros) {
-  return vendasRepository.list(tenantId, filtros);
+async function listar(tenantId, filtros, user) {
+  const donoIds = user ? await resolverDonoIds(user, 'vendas', 'ler') : null;
+  return vendasRepository.list(tenantId, { ...filtros, donoIds });
 }
 
-async function obterPorId(tenantId, id) {
+async function obterPorId(tenantId, id, user) {
   const venda = await vendasRepository.findById(tenantId, id);
   if (!venda) throw new NotFoundError('Venda não encontrada.');
+  if (user) {
+    const donoIds = await resolverDonoIds(user, 'vendas', 'ler');
+    if (!donoPermitido(donoIds, venda.vendedor_id)) throw new NotFoundError('Venda não encontrada.');
+  }
   const comissoes = await comissoesRepository.listByVenda(tenantId, id);
   return { ...venda, comissoes };
 }
@@ -164,6 +176,10 @@ async function obterPorId(tenantId, id) {
 async function cancelar(tenantId, id, usuario) {
   const venda = await vendasRepository.findById(tenantId, id);
   if (!venda) throw new NotFoundError('Venda não encontrada.');
+  if (usuario) {
+    const donoIds = await resolverDonoIds(usuario, 'vendas', 'escrever');
+    if (!donoPermitido(donoIds, venda.vendedor_id)) throw new NotFoundError('Venda não encontrada.');
+  }
   if (venda.status === 'cancelada') return venda;
 
   const atualizada = await vendasRepository.update(tenantId, id, { status: 'cancelada' });

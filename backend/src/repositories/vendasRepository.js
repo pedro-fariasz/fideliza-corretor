@@ -50,6 +50,10 @@ async function list(tenantId, filters = {}) {
 
   if (filters.status) query = query.eq('status', filters.status);
   if (filters.vendedor_id) query = query.eq('vendedor_id', filters.vendedor_id);
+  if (Array.isArray(filters.donoIds)) {
+    if (filters.donoIds.length === 0) return [];
+    query = query.in('vendedor_id', filters.donoIds);
+  }
   if (filters.produto_id) query = query.eq('produto_id', filters.produto_id);
   if (filters.data_de) query = query.gte('data_venda', filters.data_de);
   if (filters.data_ate) query = query.lte('data_venda', filters.data_ate);
@@ -83,10 +87,34 @@ async function remove(tenantId, id) {
   if (error) throw error;
 }
 
+async function reassignVendedor(tenantId, deId, paraId) {
+  const { error } = await supabase
+    .from('vendas')
+    .update({ vendedor_id: paraId })
+    .eq('tenant_id', tenantId)
+    .eq('vendedor_id', deId);
+  if (error) throw error;
+}
+
+// Ids das vendas visíveis a um conjunto de vendedores (p/ escopo de comissões).
+async function idsByVendedores(tenantId, donoIds) {
+  if (!Array.isArray(donoIds)) return null; // null => sem restrição
+  if (donoIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('vendas')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .in('vendedor_id', donoIds);
+  if (error) throw error;
+  return (data || []).map((v) => v.id);
+}
+
 module.exports = {
   create,
   findById,
   list,
   update,
   remove,
+  reassignVendedor,
+  idsByVendedores,
 };

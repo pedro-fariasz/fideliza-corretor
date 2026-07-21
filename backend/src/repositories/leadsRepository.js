@@ -82,6 +82,11 @@ async function list(tenantId, filters = {}) {
 
   if (filters.estagio) query = query.eq('estagio', filters.estagio);
   if (filters.dono_id) query = query.eq('dono_id', filters.dono_id);
+  // Escopo hierárquico: restringe aos donos que o usuário pode ver.
+  if (Array.isArray(filters.donoIds)) {
+    if (filters.donoIds.length === 0) return [];
+    query = query.in('dono_id', filters.donoIds);
+  }
   if (filters.origem_especifica) query = query.eq('origem_especifica', filters.origem_especifica);
   if (filters.status) query = query.eq('status', filters.status);
   if (filters.telefone) query = query.eq('telefone', filters.telefone);
@@ -111,10 +116,21 @@ async function update(tenantId, id, payload) {
   return data;
 }
 
+// Transfere a titularidade dos leads de um usuário para outro (carteira).
+async function reassignDono(tenantId, deId, paraId) {
+  const { error } = await supabase
+    .from('leads')
+    .update({ dono_id: paraId })
+    .eq('tenant_id', tenantId)
+    .eq('dono_id', deId);
+  if (error) throw error;
+}
+
 module.exports = {
   create,
   findById,
   findByTelefone,
   list,
   update,
+  reassignDono,
 };

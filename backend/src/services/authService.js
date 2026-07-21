@@ -66,6 +66,10 @@ async function signupCorretor({ nome, email, senha }) {
       nome: nome.trim(),
       role: 'corretor',
       status: 'ativo',
+      // Dono da conta: administrador com visão total (gerente) da própria conta.
+      papelConta: 'administrador',
+      cargo: 'gerente',
+      ativo: true,
     });
   } catch (e) {
     // Rollback: não deixa credencial órfã se o perfil/tenant falhar.

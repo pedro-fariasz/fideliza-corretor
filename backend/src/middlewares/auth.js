@@ -28,7 +28,7 @@ async function authMiddleware(req, res, next) {
 
     const { data: profile, error: profileError } = await supabase
       .from('users')
-      .select('id, tenant_id, email, role, status, nome')
+      .select('id, tenant_id, email, role, status, nome, papel_conta, cargo, lider_id, ativo')
       .eq('id', authUserId)
       .maybeSingle();
 
@@ -57,6 +57,11 @@ async function authMiddleware(req, res, next) {
         .json({ error: 'Usuário autenticado não possui perfil vinculado a um tenant.' });
     }
 
+    // Usuário desativado (Fase 0): acesso bloqueado, sem apagar seus dados.
+    if (profile.ativo === false) {
+      return res.status(403).json({ error: 'Seu acesso foi desativado. Fale com o administrador da conta.' });
+    }
+
     req.tenantId = profile.tenant_id;
     req.user = {
       id: profile.id,
@@ -65,6 +70,10 @@ async function authMiddleware(req, res, next) {
       status: profile.status,
       nome: profile.nome,
       tenantId: profile.tenant_id,
+      papel_conta: profile.papel_conta,
+      cargo: profile.cargo,
+      lider_id: profile.lider_id,
+      ativo: profile.ativo,
     };
 
     return next();

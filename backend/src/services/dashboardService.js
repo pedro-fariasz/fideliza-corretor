@@ -1,4 +1,6 @@
 const dashboardRepository = require('../repositories/dashboardRepository');
+const vendasRepository = require('../repositories/vendasRepository');
+const { resolverDonoIds } = require('./escopoService');
 
 const DATA_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -32,11 +34,17 @@ function resolverPeriodo(filtros = {}) {
   return { de, ate };
 }
 
-async function obter(tenantId, filtros = {}) {
+async function obter(tenantId, filtros = {}, user) {
   const { de, ate } = resolverPeriodo(filtros);
   const deIso = `${de}T00:00:00.000Z`;
   const ateIso = `${ate}T23:59:59.999Z`;
-  const donoId = filtros.donoId || undefined;
+
+  // Escopo hierárquico: donoIds (leads/vendas) e vendaIds (comissões).
+  let donoIds = null;
+  if (user) donoIds = await resolverDonoIds(user, 'dashboard_financeiro', 'ler');
+  // Filtro "meus" explícito (restringe ainda mais, dentro do escopo).
+  if (filtros.donoId) donoIds = donoIds === null ? [filtros.donoId] : donoIds.filter((x) => x === filtros.donoId);
+  const vendaIds = donoIds === null ? null : await vendasRepository.idsByVendedores(tenantId, donoIds);
 
   const [
     leadsNovos,
@@ -48,14 +56,14 @@ async function obter(tenantId, filtros = {}) {
     vendasRecentes,
     leadsRecentes,
   ] = await Promise.all([
-    dashboardRepository.contarLeadsCriados(tenantId, { deIso, ateIso, donoId }),
-    dashboardRepository.contarTotalLeads(tenantId, { donoId, status: 'ativo' }),
-    dashboardRepository.vendasConcluidas(tenantId, { de, ate, vendedorId: donoId }),
-    dashboardRepository.comissaoPrevista(tenantId, { de, ate }),
-    dashboardRepository.comissaoRecebida(tenantId, { de, ate }),
-    dashboardRepository.funilResumo(tenantId, { donoId }),
-    dashboardRepository.vendasRecentes(tenantId, 5),
-    dashboardRepository.leadsRecentes(tenantId, 5),
+    dashboardRepository.contarLeadsCriados(tenantId, { deIso, ateIso, donoIds }),
+    dashboardRepository.contarTotalLeads(tenantId, { donoIds, status: 'ativo' }),
+    dashboardRepository.vendasConcluidas(tenantId, { de, ate, donoIds }),
+    dashboardRepository.comissaoPrevista(tenantId, { de, ate, vendaIds }),
+    dashboardRepository.comissaoRecebida(tenantId, { de, ate, vendaIds }),
+    dashboardRepository.funilResumo(tenantId, { donoIds }),
+    dashboardRepository.vendasRecentes(tenantId, { limit: 5, donoIds }),
+    dashboardRepository.leadsRecentes(tenantId, { limit: 5, donoIds }),
   ]);
 
   const taxaConversao =

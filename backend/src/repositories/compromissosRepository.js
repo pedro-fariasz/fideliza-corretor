@@ -42,6 +42,10 @@ async function list(tenantId, filters = {}) {
 
   if (filters.usuario_id) query = query.eq('usuario_id', filters.usuario_id);
   if (filters.lead_id) query = query.eq('lead_id', filters.lead_id);
+  if (Array.isArray(filters.donoIds)) {
+    if (filters.donoIds.length === 0) return [];
+    query = query.in('usuario_id', filters.donoIds);
+  }
   if (filters.de) query = query.gte('data_inicio', filters.de);
   if (filters.ate) query = query.lte('data_inicio', filters.ate);
 
@@ -82,10 +86,20 @@ async function remove(tenantId, id) {
   return data;
 }
 
+async function reassignUsuario(tenantId, deId, paraId) {
+  const { error } = await supabase
+    .from('compromissos')
+    .update({ usuario_id: paraId })
+    .eq('tenant_id', tenantId)
+    .eq('usuario_id', deId);
+  if (error) throw error;
+}
+
 module.exports = {
   create,
   findById,
   list,
   update,
   remove,
+  reassignUsuario,
 };

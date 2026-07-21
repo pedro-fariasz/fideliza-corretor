@@ -26,7 +26,7 @@ async function listar(req, res, next) {
     } else {
       filtros.usuario_id = req.user.id;
     }
-    const compromissos = await agendaService.listar(req.tenantId, filtros);
+    const compromissos = await agendaService.listar(req.tenantId, filtros, req.user);
     return res.json(compromissos);
   } catch (err) {
     return next(err);
@@ -35,7 +35,7 @@ async function listar(req, res, next) {
 
 async function obter(req, res, next) {
   try {
-    const compromisso = await agendaService.obterPorId(req.tenantId, req.params.id);
+    const compromisso = await agendaService.obterPorId(req.tenantId, req.params.id, req.user);
     return res.json(compromisso);
   } catch (err) {
     return next(err);
@@ -44,7 +44,7 @@ async function obter(req, res, next) {
 
 async function atualizar(req, res, next) {
   try {
-    const compromisso = await agendaService.atualizar(req.tenantId, req.params.id, req.body);
+    const compromisso = await agendaService.atualizar(req.tenantId, req.params.id, req.body, req.user);
     return res.json(compromisso);
   } catch (err) {
     return next(err);
@@ -53,7 +53,7 @@ async function atualizar(req, res, next) {
 
 async function remover(req, res, next) {
   try {
-    const resultado = await agendaService.remover(req.tenantId, req.params.id);
+    const resultado = await agendaService.remover(req.tenantId, req.params.id, req.user);
     return res.json(resultado);
   } catch (err) {
     return next(err);

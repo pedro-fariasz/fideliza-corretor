@@ -25,7 +25,7 @@ async function listar(req, res, next) {
     const filtros = parseFiltros(req.query);
     // "meus" leads = do usuário logado.
     if (req.query.meus === 'true' || req.query.meus === '1') filtros.dono_id = req.user.id;
-    const leads = await leadsService.listar(req.tenantId, filtros);
+    const leads = await leadsService.listar(req.tenantId, filtros, req.user);
     return res.json(leads);
   } catch (err) {
     return next(err);
@@ -34,7 +34,7 @@ async function listar(req, res, next) {
 
 async function obter(req, res, next) {
   try {
-    const lead = await leadsService.obterPorId(req.tenantId, req.params.id);
+    const lead = await leadsService.obterPorId(req.tenantId, req.params.id, req.user);
     return res.json(lead);
   } catch (err) {
     return next(err);
@@ -43,7 +43,7 @@ async function obter(req, res, next) {
 
 async function atualizar(req, res, next) {
   try {
-    const lead = await leadsService.atualizar(req.tenantId, req.params.id, req.body);
+    const lead = await leadsService.atualizar(req.tenantId, req.params.id, req.body, req.user);
     return res.json(lead);
   } catch (err) {
     return next(err);
@@ -77,7 +77,7 @@ async function mudarStatus(req, res, next) {
 
 async function listarInteracoes(req, res, next) {
   try {
-    const interacoes = await leadsService.listarInteracoes(req.tenantId, req.params.id);
+    const interacoes = await leadsService.listarInteracoes(req.tenantId, req.params.id, req.user);
     return res.json(interacoes);
   } catch (err) {
     return next(err);
