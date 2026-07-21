@@ -16,6 +16,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const agendaRoutes = require('./routes/agenda');
 const equipeRoutes = require('./routes/equipe');
 const carteiraRoutes = require('./routes/carteira');
+const posvendasRoutes = require('./routes/posvendas');
 const adminRoutes = require('./routes/admin');
 const internoRoutes = require('./routes/interno');
 
@@ -65,6 +66,14 @@ function createApp() {
     requireFeature('carteira'),
     requirePermissao('carteira', 'ler'),
     carteiraRoutes
+  );
+  // Pós-Vendas (Fase 2): gated por feature flag + permissão 'posvendas' (leitura).
+  app.use(
+    '/api/posvendas',
+    requireAtivo,
+    requireFeature('posvendas'),
+    requirePermissao('posvendas', 'ler'),
+    posvendasRoutes
   );
   app.use('/api/admin', adminRoutes);
   // Painel interno cross-tenant (gate por requireInternal dentro das rotas).

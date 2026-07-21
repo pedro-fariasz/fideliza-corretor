@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Home, Filter, Users, Package, DollarSign, Calendar, Briefcase, UserCog, Settings } from 'lucide-react';
+import { Home, Filter, Users, Package, DollarSign, Calendar, Briefcase, Heart, UserCog, Settings } from 'lucide-react';
 import SidebarShell from './SidebarShell';
 import { useAuth } from '../hooks/useAuth';
 
@@ -17,6 +17,7 @@ const TODOS_ITENS = [
   { to: '/produtos', label: 'Produtos', icon: Package, perfis: ['administrador', 'gerente'] },
   { to: '/vendas', label: 'Vendas', icon: DollarSign, perfis: ['administrador', 'gerente', 'lider', 'vendedor'] },
   { to: '/carteira', label: 'Carteira', icon: Briefcase, perfis: ['administrador', 'gerente', 'lider', 'vendedor'], flag: 'carteira' },
+  { to: '/posvendas', label: 'Pós-Vendas', icon: Heart, perfis: ['administrador', 'gerente', 'lider', 'vendedor'], flag: 'posvendas' },
   { to: '/agenda', label: 'Agenda', icon: Calendar, perfis: ['administrador', 'gerente', 'lider', 'vendedor', 'secretaria'] },
   { to: '/equipe', label: 'Equipe', icon: UserCog, perfis: ['administrador'], flag: 'equipe' },
   { to: '/configuracoes', label: 'Configurações', icon: Settings, perfis: ['administrador', 'gerente', 'lider', 'vendedor', 'secretaria'] },
