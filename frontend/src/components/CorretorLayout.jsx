@@ -1,22 +1,37 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Home, Filter, Users, Package, DollarSign, Calendar, Settings } from 'lucide-react';
+import { Home, Filter, Users, Package, DollarSign, Calendar, UserCog, Settings } from 'lucide-react';
 import SidebarShell from './SidebarShell';
+import { useAuth } from '../hooks/useAuth';
 
 // Shell de navegação do CORRETOR (sidebar). Decidido pelo role em App.jsx —
 // nunca aparece junto com o menu da equipe interna.
 // Ícones: lucide-react (linear, cor herdada do texto) — nunca emoji.
-const ITEMS = [
-  { to: '/', label: 'Início', icon: Home, end: true },
-  { to: '/funil', label: 'Funil', icon: Filter },
-  { to: '/leads', label: 'Leads', icon: Users },
-  { to: '/produtos', label: 'Produtos', icon: Package },
-  { to: '/vendas', label: 'Vendas', icon: DollarSign },
-  { to: '/agenda', label: 'Agenda', icon: Calendar },
-  { to: '/configuracoes', label: 'Configurações', icon: Settings },
+//
+// A lista é montada DINAMICAMENTE conforme o papel da conta (perfil_efetivo)
+// e as feature flags. O servidor continua sendo a fonte da verdade (403);
+// aqui é só UX — não mostramos o que o usuário não pode usar.
+const TODOS_ITENS = [
+  { to: '/', label: 'Início', icon: Home, end: true, perfis: ['administrador', 'gerente', 'lider', 'vendedor'] },
+  { to: '/funil', label: 'Funil', icon: Filter, perfis: ['administrador', 'gerente', 'lider', 'vendedor'] },
+  { to: '/leads', label: 'Leads', icon: Users, perfis: ['administrador', 'gerente', 'lider', 'vendedor', 'secretaria'] },
+  { to: '/produtos', label: 'Produtos', icon: Package, perfis: ['administrador', 'gerente'] },
+  { to: '/vendas', label: 'Vendas', icon: DollarSign, perfis: ['administrador', 'gerente', 'lider', 'vendedor'] },
+  { to: '/agenda', label: 'Agenda', icon: Calendar, perfis: ['administrador', 'gerente', 'lider', 'vendedor', 'secretaria'] },
+  { to: '/equipe', label: 'Equipe', icon: UserCog, perfis: ['administrador'], flag: 'equipe' },
+  { to: '/configuracoes', label: 'Configurações', icon: Settings, perfis: ['administrador', 'gerente', 'lider', 'vendedor', 'secretaria'] },
 ];
 
 export default function CorretorLayout() {
   const { pathname } = useLocation();
+  const { profile } = useAuth();
+
+  const perfil = (profile && profile.perfil_efetivo) || 'vendedor';
+  const flags = (profile && profile.flags) || {};
+
+  const ITEMS = TODOS_ITENS.filter(
+    (i) => i.perfis.includes(perfil) && (!i.flag || flags[i.flag])
+  );
+
   // Título = rótulo do item ativo (mais específico primeiro).
   const ativo = [...ITEMS]
     .reverse()

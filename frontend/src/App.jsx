@@ -18,6 +18,7 @@ import LeadsPage from './pages/corretor/LeadsPage';
 import ProdutosPage from './pages/corretor/ProdutosPage';
 import VendasPage from './pages/corretor/VendasPage';
 import AgendaPage from './pages/corretor/AgendaPage';
+import EquipePage from './pages/corretor/EquipePage';
 import ConfiguracoesPage from './pages/corretor/ConfiguracoesPage';
 
 // Equipe interna (shell com sidebar)
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="/produtos" element={<ProdutosPage />} />
             <Route path="/vendas" element={<VendasPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
+            <Route path="/equipe" element={<EquipePage />} />
             <Route path="/configuracoes" element={<ConfiguracoesPage />} />
           </Route>
 
