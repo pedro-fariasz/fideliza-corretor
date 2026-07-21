@@ -42,6 +42,7 @@ function normalizarPayload(input) {
   if (out.percentual !== undefined) out.percentual = coerceNumero(out.percentual);
   if (out.parcelas_limite !== undefined) out.parcelas_limite = coerceNumero(out.parcelas_limite);
   if (out.dia_pagamento !== undefined) out.dia_pagamento = coerceNumero(out.dia_pagamento);
+  if (out.vigencia_meses !== undefined) out.vigencia_meses = coerceNumero(out.vigencia_meses);
   return out;
 }
 
@@ -71,6 +72,11 @@ function validar(p) {
   if (inicio === 'mesmo_mes') {
     if (!Number.isInteger(p.dia_pagamento) || p.dia_pagamento < 1 || p.dia_pagamento > 28) {
       throw new ValidationError('dia_pagamento deve ser um inteiro entre 1 e 28 quando o pagamento é no mesmo mês.');
+    }
+  }
+  if (p.vigencia_meses !== undefined && p.vigencia_meses !== null) {
+    if (!Number.isInteger(p.vigencia_meses) || p.vigencia_meses < 1 || p.vigencia_meses > 120) {
+      throw new ValidationError('vigencia_meses deve ser um inteiro entre 1 e 120.');
     }
   }
 }

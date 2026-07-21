@@ -5,6 +5,7 @@ const leadsRepository = require('../repositories/leadsRepository');
 const interacoesRepository = require('../repositories/interacoesRepository');
 const comissaoService = require('./comissaoService');
 const { resolverDonoIds, donoPermitido } = require('./escopoService');
+const { FEATURE_FLAGS } = require('../config/constants');
 
 const FORMAS_PAGAMENTO = ['debito', 'boleto', 'pix', 'cartao', 'dinheiro', 'outro'];
 const DATA_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -152,6 +153,22 @@ async function criar(tenantId, input, usuario) {
       'sistema',
       `Venda registrada: ${formatBRL(valor)} — ${produto.nome} (${parcelas.length}x de comissão).`
     );
+  }
+
+  // Fase 1: venda gera apólice automaticamente (só quando a carteira está ativa,
+  // e nunca quebra a venda se falhar — o registro financeiro já está feito).
+  if (FEATURE_FLAGS.carteira && lead) {
+    try {
+      // require tardio: evita ciclo e só carrega quando a feature está ligada.
+      const apolicesService = require('./apolicesService');
+      await apolicesService.gerarDeVendaComLead(tenantId, venda, produto, lead);
+    } catch (err) {
+      console.error('[vendasService.criar] venda ok, mas falhou ao gerar apólice', {
+        tenant_id: tenantId,
+        venda_id: venda.id,
+        error: err.message,
+      });
+    }
   }
 
   return { ...venda, comissoes };
