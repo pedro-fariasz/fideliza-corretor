@@ -5,9 +5,11 @@ import SidebarShell from './SidebarShell';
 // nunca aparece junto com o menu da equipe interna.
 const ITEMS = [
   { to: '/', label: 'Início', icon: '🏠', end: true },
-  { to: '/pendencias', label: 'Pendências', icon: '⏰' },
-  { to: '/clientes', label: 'Clientes', icon: '👥' },
-  { to: '/campanhas', label: 'Campanhas', icon: '📣' },
+  { to: '/funil', label: 'Funil', icon: '🗂️' },
+  { to: '/leads', label: 'Leads', icon: '👥' },
+  { to: '/produtos', label: 'Produtos', icon: '📦' },
+  { to: '/vendas', label: 'Vendas', icon: '💰' },
+  { to: '/agenda', label: 'Agenda', icon: '📅' },
   { to: '/configuracoes', label: 'Configurações', icon: '⚙️' },
 ];
 
