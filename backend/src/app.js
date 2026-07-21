@@ -7,6 +7,8 @@ const authRoutes = require('./routes/auth');
 const clientesRoutes = require('./routes/clientes');
 const produtosRoutes = require('./routes/produtos');
 const leadsRoutes = require('./routes/leads');
+const vendasRoutes = require('./routes/vendas');
+const comissoesRoutes = require('./routes/comissoes');
 const adminRoutes = require('./routes/admin');
 const internoRoutes = require('./routes/interno');
 
@@ -39,6 +41,8 @@ function createApp() {
   app.use('/api/clientes', requireAtivo, clientesRoutes);
   app.use('/api/produtos', requireAtivo, produtosRoutes);
   app.use('/api/leads', requireAtivo, leadsRoutes);
+  app.use('/api/vendas', requireAtivo, vendasRoutes);
+  app.use('/api/comissoes', requireAtivo, comissoesRoutes);
   app.use('/api/admin', adminRoutes);
   // Painel interno cross-tenant (gate por requireInternal dentro das rotas).
   app.use('/api/interno', internoRoutes);
