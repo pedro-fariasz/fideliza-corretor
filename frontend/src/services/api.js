@@ -299,6 +299,26 @@ export const api = {
       body: JSON.stringify({ transferir_para_id: transferirParaId || null }),
     });
   },
+
+  // --- Carteira (Fase 1) ----------------------------------------------------
+  carteiraPipeline(params = {}) {
+    return request(`/api/carteira/pipeline${toQuery(params)}`);
+  },
+  carteiraMetricas(params = {}) {
+    return request(`/api/carteira/metricas${toQuery(params)}`);
+  },
+  obterApolice(id) {
+    return request(`/api/carteira/apolices/${id}`);
+  },
+  criarNegocioAvulso(payload) {
+    return request('/api/carteira/negocio-avulso', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  renovarApolice(id, payload) {
+    return request(`/api/carteira/apolices/${id}/renovar`, { method: 'POST', body: JSON.stringify(payload || {}) });
+  },
+  cancelarApolice(id, motivo) {
+    return request(`/api/carteira/apolices/${id}/cancelar`, { method: 'PATCH', body: JSON.stringify({ motivo }) });
+  },
 };
 
 // Monta querystring a partir de um objeto, ignorando vazios/undefined.

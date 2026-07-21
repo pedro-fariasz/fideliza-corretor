@@ -10,6 +10,7 @@ const WRITABLE_COLUMNS = [
   'percentual',
   'inicio_pagamento',
   'dia_pagamento',
+  'vigencia_meses',
   'ativo',
 ];
 

@@ -20,4 +20,16 @@ async function remove(id) {
   if (error) throw error;
 }
 
-module.exports = { create, remove };
+// Ids de todos os tenants de corretor (exclui o tenant de plataforma interno).
+// Uso restrito a JOBS internos (cron), nunca em rota de usuário.
+async function listCorretorIds() {
+  const { PLATFORM_TENANT_ID } = require('../config/constants');
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('id')
+    .neq('id', PLATFORM_TENANT_ID);
+  if (error) throw error;
+  return (data || []).map((t) => t.id);
+}
+
+module.exports = { create, remove, listCorretorIds };

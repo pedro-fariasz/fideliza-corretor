@@ -4,7 +4,9 @@ const cors = require('cors');
 const { authMiddleware } = require('./middlewares/auth');
 const { requireAtivo } = require('./middlewares/roles');
 const { requirePermissao } = require('./middlewares/permissoes');
+const { requireFeature } = require('./middlewares/feature');
 const authRoutes = require('./routes/auth');
+const jobsRoutes = require('./routes/jobs');
 const clientesRoutes = require('./routes/clientes');
 const produtosRoutes = require('./routes/produtos');
 const leadsRoutes = require('./routes/leads');
@@ -13,6 +15,7 @@ const comissoesRoutes = require('./routes/comissoes');
 const dashboardRoutes = require('./routes/dashboard');
 const agendaRoutes = require('./routes/agenda');
 const equipeRoutes = require('./routes/equipe');
+const carteiraRoutes = require('./routes/carteira');
 const adminRoutes = require('./routes/admin');
 const internoRoutes = require('./routes/interno');
 
@@ -40,6 +43,9 @@ function createApp() {
   // Precisa vir ANTES do authMiddleware global de /api.
   app.use('/api/auth', authRoutes);
 
+  // Jobs (cron): sem authMiddleware — protegidos por JOB_SECRET no header.
+  app.use('/api/jobs', jobsRoutes);
+
   // Demais rotas de /api são autenticadas.
   app.use('/api', authMiddleware);
   app.use('/api/clientes', requireAtivo, clientesRoutes);
@@ -52,6 +58,14 @@ function createApp() {
   app.use('/api/dashboard', requireAtivo, requirePermissao('dashboard_financeiro', 'ler'), dashboardRoutes);
   app.use('/api/agenda', requireAtivo, requirePermissao('agenda', 'ler'), agendaRoutes);
   app.use('/api/equipe', requireAtivo, equipeRoutes); // gate por 'usuarios' dentro do router
+  // Carteira (Fase 1): gated por feature flag + permissão 'carteira' (leitura).
+  app.use(
+    '/api/carteira',
+    requireAtivo,
+    requireFeature('carteira'),
+    requirePermissao('carteira', 'ler'),
+    carteiraRoutes
+  );
   app.use('/api/admin', adminRoutes);
   // Painel interno cross-tenant (gate por requireInternal dentro das rotas).
   app.use('/api/interno', internoRoutes);

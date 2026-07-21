@@ -13,6 +13,7 @@ const VAZIO = {
   percentual: '',
   inicio_pagamento: 'mes_seguinte',
   dia_pagamento: '',
+  vigencia_meses: 12,
   ativo: true,
 };
 
@@ -66,6 +67,7 @@ export default function ProdutosPage() {
       percentual: p.percentual ?? '',
       inicio_pagamento: p.inicio_pagamento || 'mes_seguinte',
       dia_pagamento: p.dia_pagamento ?? '',
+      vigencia_meses: p.vigencia_meses ?? 12,
       ativo: p.ativo,
     });
     setEditId(p.id);
@@ -98,6 +100,7 @@ export default function ProdutosPage() {
           form.inicio_pagamento === 'mesmo_mes' && form.dia_pagamento !== ''
             ? Number(form.dia_pagamento)
             : null,
+        vigencia_meses: form.vigencia_meses === '' ? 12 : Number(form.vigencia_meses),
       };
       if (editId) await api.atualizarProduto(editId, payload);
       else await api.criarProduto(payload);
@@ -266,6 +269,16 @@ export default function ProdutosPage() {
               required
             />
           )}
+
+          <FormField
+            label="Vigência (meses) — prazo do contrato p/ a apólice"
+            name="vigencia_meses"
+            type="number"
+            min={1}
+            max={120}
+            value={form.vigencia_meses}
+            onChange={onChange}
+          />
 
           <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" name="ativo" checked={form.ativo} onChange={onChange} className="h-4 w-4" />
