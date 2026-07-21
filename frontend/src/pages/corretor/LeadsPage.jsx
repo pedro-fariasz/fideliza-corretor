@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import LeadFormModal from '../../components/LeadFormModal';
 import { ESTAGIO_LABEL, ESTAGIOS } from '../../utils/crmConstants';
 import { formatBRL } from '../../utils/format';
 
 export default function LeadsPage() {
+  const { profile } = useAuth();
+  const verValores = !profile || profile.pode_ver_valores !== false;
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -87,7 +90,7 @@ export default function LeadsPage() {
                 <th className="px-4 py-3">Telefone</th>
                 <th className="px-4 py-3">Interesse</th>
                 <th className="px-4 py-3">Estágio</th>
-                <th className="px-4 py-3">Valor est.</th>
+                {verValores && <th className="px-4 py-3">Valor est.</th>}
                 <th className="px-4 py-3">Origem</th>
               </tr>
             </thead>
@@ -102,9 +105,11 @@ export default function LeadsPage() {
                       {ESTAGIO_LABEL[l.estagio]}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                    {l.valor_estimado ? formatBRL(l.valor_estimado) : '—'}
-                  </td>
+                  {verValores && (
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      {l.valor_estimado ? formatBRL(l.valor_estimado) : '—'}
+                    </td>
+                  )}
                   <td className="px-4 py-3 text-gray-400">{l.origem_especifica || '—'}</td>
                 </tr>
               ))}

@@ -9,7 +9,7 @@ async function obter(req, res, next) {
     // "meus" números = do usuário logado (senão, a conta inteira).
     if (req.query.meus === 'true' || req.query.meus === '1') filtros.donoId = req.user.id;
 
-    const dashboard = await dashboardService.obter(req.tenantId, filtros);
+    const dashboard = await dashboardService.obter(req.tenantId, filtros, req.user);
     return res.json(dashboard);
   } catch (err) {
     return next(err);

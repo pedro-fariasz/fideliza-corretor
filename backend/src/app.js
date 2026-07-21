@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const { authMiddleware } = require('./middlewares/auth');
 const { requireAtivo } = require('./middlewares/roles');
+const { requirePermissao } = require('./middlewares/permissoes');
 const authRoutes = require('./routes/auth');
 const clientesRoutes = require('./routes/clientes');
 const produtosRoutes = require('./routes/produtos');
@@ -11,6 +12,7 @@ const vendasRoutes = require('./routes/vendas');
 const comissoesRoutes = require('./routes/comissoes');
 const dashboardRoutes = require('./routes/dashboard');
 const agendaRoutes = require('./routes/agenda');
+const equipeRoutes = require('./routes/equipe');
 const adminRoutes = require('./routes/admin');
 const internoRoutes = require('./routes/interno');
 
@@ -41,12 +43,15 @@ function createApp() {
   // Demais rotas de /api são autenticadas.
   app.use('/api', authMiddleware);
   app.use('/api/clientes', requireAtivo, clientesRoutes);
+  // Produtos: GET é aberto a qualquer usuário ativo (o formulário de venda
+  // precisa da lista); a ESCRITA é gated por permissão dentro do router.
   app.use('/api/produtos', requireAtivo, produtosRoutes);
-  app.use('/api/leads', requireAtivo, leadsRoutes);
-  app.use('/api/vendas', requireAtivo, vendasRoutes);
-  app.use('/api/comissoes', requireAtivo, comissoesRoutes);
-  app.use('/api/dashboard', requireAtivo, dashboardRoutes);
-  app.use('/api/agenda', requireAtivo, agendaRoutes);
+  app.use('/api/leads', requireAtivo, requirePermissao('leads', 'ler'), leadsRoutes);
+  app.use('/api/vendas', requireAtivo, requirePermissao('vendas', 'ler'), vendasRoutes);
+  app.use('/api/comissoes', requireAtivo, requirePermissao('comissoes', 'ler'), comissoesRoutes);
+  app.use('/api/dashboard', requireAtivo, requirePermissao('dashboard_financeiro', 'ler'), dashboardRoutes);
+  app.use('/api/agenda', requireAtivo, requirePermissao('agenda', 'ler'), agendaRoutes);
+  app.use('/api/equipe', requireAtivo, equipeRoutes); // gate por 'usuarios' dentro do router
   app.use('/api/admin', adminRoutes);
   // Painel interno cross-tenant (gate por requireInternal dentro das rotas).
   app.use('/api/interno', internoRoutes);

@@ -1,5 +1,6 @@
 const compromissosRepository = require('../repositories/compromissosRepository');
 const leadsRepository = require('../repositories/leadsRepository');
+const { resolverDonoIds, donoPermitido } = require('./escopoService');
 
 class ValidationError extends Error {
   constructor(message) {
@@ -64,19 +65,23 @@ async function criar(tenantId, input, usuario) {
   return compromissosRepository.create(tenantId, payload);
 }
 
-async function listar(tenantId, filtros) {
-  return compromissosRepository.list(tenantId, filtros);
+async function listar(tenantId, filtros, user) {
+  const donoIds = user ? await resolverDonoIds(user, 'agenda', 'ler') : null;
+  return compromissosRepository.list(tenantId, { ...filtros, donoIds });
 }
 
-async function obterPorId(tenantId, id) {
+async function obterPorId(tenantId, id, user) {
   const compromisso = await compromissosRepository.findById(tenantId, id);
   if (!compromisso) throw new NotFoundError('Compromisso não encontrado.');
+  if (user) {
+    const donoIds = await resolverDonoIds(user, 'agenda', 'escrever');
+    if (!donoPermitido(donoIds, compromisso.usuario_id)) throw new NotFoundError('Compromisso não encontrado.');
+  }
   return compromisso;
 }
 
-async function atualizar(tenantId, id, input) {
-  const existente = await compromissosRepository.findById(tenantId, id);
-  if (!existente) throw new NotFoundError('Compromisso não encontrado.');
+async function atualizar(tenantId, id, input, user) {
+  const existente = await obterPorId(tenantId, id, user); // tenant + escopo
 
   const body = input || {};
   const patch = {};
@@ -110,7 +115,8 @@ async function atualizar(tenantId, id, input) {
   return atualizado;
 }
 
-async function remover(tenantId, id) {
+async function remover(tenantId, id, user) {
+  await obterPorId(tenantId, id, user); // tenant + escopo
   const removido = await compromissosRepository.remove(tenantId, id);
   if (!removido) throw new NotFoundError('Compromisso não encontrado.');
   return { id: removido.id, removido: true };

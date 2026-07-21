@@ -58,6 +58,11 @@ async function list(tenantId, filters = {}) {
 
   if (filters.status) query = query.eq('status', filters.status);
   if (filters.beneficiario) query = query.eq('beneficiario', filters.beneficiario);
+  // Escopo: só as comissões das vendas que o usuário pode ver.
+  if (Array.isArray(filters.vendaIds)) {
+    if (filters.vendaIds.length === 0) return [];
+    query = query.in('venda_id', filters.vendaIds);
+  }
   if (filters.data_prevista_de) query = query.gte('data_prevista', filters.data_prevista_de);
   if (filters.data_prevista_ate) query = query.lte('data_prevista', filters.data_prevista_ate);
 

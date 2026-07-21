@@ -1,12 +1,15 @@
 const express = require('express');
 const agendaController = require('../controllers/agendaController');
+const { requirePermissao } = require('../middlewares/permissoes');
 
 const router = express.Router();
 
-router.post('/', agendaController.criar);
+const escrever = requirePermissao('agenda', 'escrever');
+
+router.post('/', escrever, agendaController.criar);
 router.get('/', agendaController.listar); // ?de&ate&equipe&lead_id
 router.get('/:id', agendaController.obter);
-router.put('/:id', agendaController.atualizar);
-router.delete('/:id', agendaController.remover);
+router.put('/:id', escrever, agendaController.atualizar);
+router.delete('/:id', escrever, agendaController.remover);
 
 module.exports = router;

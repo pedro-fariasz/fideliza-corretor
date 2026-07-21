@@ -22,7 +22,7 @@ async function listar(req, res, next) {
   try {
     const filtros = parseFiltros(req.query);
     if (req.query.meus === 'true' || req.query.meus === '1') filtros.vendedor_id = req.user.id;
-    const vendas = await vendasService.listar(req.tenantId, filtros);
+    const vendas = await vendasService.listar(req.tenantId, filtros, req.user);
     return res.json(vendas);
   } catch (err) {
     return next(err);
@@ -31,7 +31,7 @@ async function listar(req, res, next) {
 
 async function obter(req, res, next) {
   try {
-    const venda = await vendasService.obterPorId(req.tenantId, req.params.id);
+    const venda = await vendasService.obterPorId(req.tenantId, req.params.id, req.user);
     return res.json(venda);
   } catch (err) {
     return next(err);

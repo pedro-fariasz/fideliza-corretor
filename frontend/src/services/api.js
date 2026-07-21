@@ -279,6 +279,26 @@ export const api = {
   removerCompromisso(id) {
     return request(`/api/agenda/${id}`, { method: 'DELETE' });
   },
+
+  // --- Equipe (gestão de usuários da conta — só administrador) --------------
+  listarEquipe() {
+    return request('/api/equipe');
+  },
+  criarCorretorEquipe(payload) {
+    return request('/api/equipe/corretor', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  criarSecretaria(payload) {
+    return request('/api/equipe/secretaria', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  editarUsuario(id, payload) {
+    return request(`/api/equipe/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  desativarUsuario(id, transferirParaId) {
+    return request(`/api/equipe/${id}/desativar`, {
+      method: 'PATCH',
+      body: JSON.stringify({ transferir_para_id: transferirParaId || null }),
+    });
+  },
 };
 
 // Monta querystring a partir de um objeto, ignorando vazios/undefined.

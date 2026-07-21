@@ -1,5 +1,6 @@
 const leadsRepository = require('../repositories/leadsRepository');
 const interacoesRepository = require('../repositories/interacoesRepository');
+const { resolverDonoIds, donoPermitido } = require('./escopoService');
 
 // Os 6 estágios do funil (ordem fixa) + probabilidade padrão de cada um (PRD §6.4).
 const ESTAGIOS = [
@@ -170,18 +171,25 @@ async function criar(tenantId, input, usuario) {
   return lead;
 }
 
-async function listar(tenantId, filtros) {
-  return leadsRepository.list(tenantId, filtros);
+async function listar(tenantId, filtros, user) {
+  const donoIds = user ? await resolverDonoIds(user, 'leads', 'ler') : null;
+  return leadsRepository.list(tenantId, { ...filtros, donoIds });
 }
 
-async function obterPorId(tenantId, id) {
+// Busca o lead garantindo tenant E escopo hierárquico do usuário.
+// Fora do escopo => 404 (não vaza existência de lead alheio).
+async function obterPorId(tenantId, id, user, acao = 'ler') {
   const lead = await leadsRepository.findById(tenantId, id);
   if (!lead) throw new NotFoundError('Lead não encontrado.');
+  if (user) {
+    const donoIds = await resolverDonoIds(user, 'leads', acao);
+    if (!donoPermitido(donoIds, lead.dono_id)) throw new NotFoundError('Lead não encontrado.');
+  }
   return lead;
 }
 
-async function listarInteracoes(tenantId, id) {
-  await obterPorId(tenantId, id); // garante que o lead é do tenant
+async function listarInteracoes(tenantId, id, user) {
+  await obterPorId(tenantId, id, user); // garante tenant + escopo
   return interacoesRepository.listByLead(tenantId, id);
 }
 
@@ -191,9 +199,8 @@ async function checarDuplicidadeTelefone(tenantId, telefone) {
   return leadsRepository.findByTelefone(tenantId, telefone);
 }
 
-async function atualizar(tenantId, id, input) {
-  const existente = await leadsRepository.findById(tenantId, id);
-  if (!existente) throw new NotFoundError('Lead não encontrado.');
+async function atualizar(tenantId, id, input, user) {
+  await obterPorId(tenantId, id, user, 'escrever'); // tenant + escopo
 
   const payload = normalizarPayload(input || {});
   delete payload.id;
@@ -217,8 +224,7 @@ async function mudarEstagio(tenantId, id, novoEstagio, usuario) {
   if (!ESTAGIOS.includes(novoEstagio)) {
     throw new ValidationError(`estagio inválido. Valores aceitos: ${ESTAGIOS.join(', ')}.`);
   }
-  const lead = await leadsRepository.findById(tenantId, id);
-  if (!lead) throw new NotFoundError('Lead não encontrado.');
+  const lead = await obterPorId(tenantId, id, usuario, 'escrever'); // tenant + escopo
 
   if (lead.estagio === novoEstagio) return lead; // no-op
 
@@ -243,8 +249,7 @@ async function mudarEstagio(tenantId, id, novoEstagio, usuario) {
 
 // ---- Registrar contato/interação manual --------------------------------------
 async function registrarInteracao(tenantId, id, input, usuario) {
-  const lead = await leadsRepository.findById(tenantId, id);
-  if (!lead) throw new NotFoundError('Lead não encontrado.');
+  await obterPorId(tenantId, id, usuario, 'escrever'); // tenant + escopo
 
   const tipo = (input && input.tipo) || 'nota';
   if (!TIPOS_INTERACAO.includes(tipo)) {
@@ -270,8 +275,7 @@ async function mudarStatus(tenantId, id, novoStatus, motivo, usuario) {
   if (!STATUS_LEAD.includes(novoStatus)) {
     throw new ValidationError(`status inválido. Valores aceitos: ${STATUS_LEAD.join(', ')}.`);
   }
-  const lead = await leadsRepository.findById(tenantId, id);
-  if (!lead) throw new NotFoundError('Lead não encontrado.');
+  const lead = await obterPorId(tenantId, id, usuario, 'escrever'); // tenant + escopo
 
   const patch = { status: novoStatus };
   patch.motivo_perda = novoStatus === 'perdido' ? normalizarString(motivo) : null;

@@ -5,10 +5,12 @@ const { supabase } = require('../config/supabase');
 // Supabase Auth. users.id === id do usuário no Supabase Auth.
 // =============================================================================
 
+const CAMPOS = 'id, tenant_id, email, nome, role, status, papel_conta, cargo, lider_id, ativo, ultimo_acesso, criado_em';
+
 async function findById(id) {
   const { data, error } = await supabase
     .from('users')
-    .select('id, tenant_id, email, nome, role, status')
+    .select(CAMPOS)
     .eq('id', id)
     .maybeSingle();
 
@@ -19,7 +21,7 @@ async function findById(id) {
 async function findByEmail(email) {
   const { data, error } = await supabase
     .from('users')
-    .select('id, tenant_id, email, nome, role, status')
+    .select(CAMPOS)
     .eq('email', email)
     .maybeSingle();
 
@@ -27,16 +29,80 @@ async function findByEmail(email) {
   return data;
 }
 
-// Cria o perfil. `id` é o UUID vindo do Supabase Auth.
-async function create({ id, tenantId, email, nome, role, status }) {
+// Usuário dentro de um tenant específico (usado pela gestão de equipe).
+async function findByIdInTenant(tenantId, id) {
   const { data, error } = await supabase
     .from('users')
-    .insert({ id, tenant_id: tenantId, email, nome, role, status })
-    .select('id, tenant_id, email, nome, role, status')
-    .single();
+    .select(CAMPOS)
+    .eq('tenant_id', tenantId)
+    .eq('id', id)
+    .maybeSingle();
 
   if (error) throw error;
   return data;
+}
+
+// Cria o perfil. `id` é o UUID vindo do Supabase Auth.
+async function create({ id, tenantId, email, nome, role, status, papelConta, cargo, liderId, ativo }) {
+  const row = { id, tenant_id: tenantId, email, nome, role, status };
+  if (papelConta !== undefined) row.papel_conta = papelConta;
+  if (cargo !== undefined) row.cargo = cargo;
+  if (liderId !== undefined) row.lider_id = liderId;
+  if (ativo !== undefined) row.ativo = ativo;
+
+  const { data, error } = await supabase.from('users').insert(row).select(CAMPOS).single();
+  if (error) throw error;
+  return data;
+}
+
+// Lista os usuários de uma conta (gestão de equipe).
+async function listByTenant(tenantId) {
+  const { data, error } = await supabase
+    .from('users')
+    .select(CAMPOS)
+    .eq('tenant_id', tenantId)
+    .order('criado_em', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+// Ids dos subordinados DIRETOS de um líder (lider_id = liderId).
+async function listSubordinadoIds(tenantId, liderId) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('lider_id', liderId);
+
+  if (error) throw error;
+  return (data || []).map((u) => u.id);
+}
+
+// Atualiza campos da conta (nome, cargo, lider_id, papel_conta, ativo), no tenant.
+async function updateConta(tenantId, id, patch) {
+  const permitido = {};
+  for (const k of ['nome', 'cargo', 'lider_id', 'papel_conta', 'ativo']) {
+    if (patch[k] !== undefined) permitido[k] = patch[k];
+  }
+  const { data, error } = await supabase
+    .from('users')
+    .update(permitido)
+    .eq('tenant_id', tenantId)
+    .eq('id', id)
+    .select(CAMPOS)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+async function setUltimoAcesso(id) {
+  const { error } = await supabase
+    .from('users')
+    .update({ ultimo_acesso: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
 }
 
 // Consulta a allowlist de pré-aprovação (migration 003).
@@ -88,7 +154,12 @@ async function setStatusInterno(id, status, aprovadoPor) {
 module.exports = {
   findById,
   findByEmail,
+  findByIdInTenant,
   create,
+  listByTenant,
+  listSubordinadoIds,
+  updateConta,
+  setUltimoAcesso,
   findPreAprovada,
   listPendentes,
   setStatusInterno,
