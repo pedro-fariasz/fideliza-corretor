@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router-dom';
+import { Ban, Hourglass } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import AuthShell from '../components/AuthShell';
 
@@ -21,8 +22,8 @@ export default function AguardandoAprovacaoPage() {
     <AuthShell band="equipe">
       <section className="w-full max-w-sm">
         <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-amber/15 text-2xl">
-            {recusado ? '🚫' : '⏳'}
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-amber/15 text-brand-amber">
+            {recusado ? <Ban size={22} aria-hidden="true" /> : <Hourglass size={22} aria-hidden="true" />}
           </div>
           <h2 className="text-xl font-semibold text-brand-navy">
             {recusado ? 'Acesso não liberado' : 'Aguardando aprovação'}

@@ -51,7 +51,7 @@ export default function AprovacoesPage() {
         <p className="text-sm text-gray-500 dark:text-gray-400">Carregando...</p>
       ) : pendentes.length === 0 ? (
         <div className="rounded-lg bg-white p-6 text-center text-sm text-gray-500 shadow-sm dark:bg-white/5 dark:text-gray-400 dark:ring-1 dark:ring-white/10">
-          Nenhum funcionário aguardando aprovação. 🎉
+          Nenhum funcionário aguardando aprovação.
         </div>
       ) : (
         <ul className="space-y-2">

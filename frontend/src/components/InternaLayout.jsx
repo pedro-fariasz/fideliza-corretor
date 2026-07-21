@@ -1,4 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
+import { Building2, LayoutGrid, CheckCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import SidebarShell from './SidebarShell';
 
@@ -6,11 +7,12 @@ import SidebarShell from './SidebarShell';
 // em App.jsx — nunca aparece junto com o menu do corretor.
 // "Aprovações" só entra para admin (o fluxo de aprovação já existia; aqui só é
 // reexposto no menu). Corretores e Kanban são a leitura cross-tenant.
+// Ícones: lucide-react (linear, cor herdada do texto) — nunca emoji.
 const BASE_ITEMS = [
-  { to: '/equipe/painel', label: 'Corretores', icon: '🏢', end: true },
-  { to: '/equipe/painel/kanban', label: 'Kanban', icon: '🗂️' },
+  { to: '/equipe/painel', label: 'Corretores', icon: Building2, end: true },
+  { to: '/equipe/painel/kanban', label: 'Kanban', icon: LayoutGrid },
 ];
-const ADMIN_ITEM = { to: '/equipe/painel/aprovacoes', label: 'Aprovações', icon: '✅' };
+const ADMIN_ITEM = { to: '/equipe/painel/aprovacoes', label: 'Aprovações', icon: CheckCircle };
 
 export default function InternaLayout() {
   const { profile } = useAuth();
