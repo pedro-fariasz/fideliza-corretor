@@ -35,4 +35,21 @@ async function listByLead(tenantId, leadId) {
   return data || [];
 }
 
-module.exports = { create, listByLead };
+// Mapa lead_id -> data da interação mais recente ('YYYY-MM-DD'), para o BI
+// ("sem contato nos últimos N dias"). Uma query, reduzido em app-layer.
+async function latestPorLead(tenantId) {
+  if (!tenantId) throw new Error('tenantId é obrigatório em interacoesRepository.latestPorLead');
+  const { data, error } = await supabase
+    .from('interacoes')
+    .select('lead_id, criado_em')
+    .eq('tenant_id', tenantId)
+    .order('criado_em', { ascending: false });
+  if (error) throw error;
+  const map = {};
+  for (const row of data || []) {
+    if (row.lead_id && !map[row.lead_id]) map[row.lead_id] = String(row.criado_em).slice(0, 10);
+  }
+  return map;
+}
+
+module.exports = { create, listByLead, latestPorLead };

@@ -8,6 +8,7 @@ const express = require('express');
 const tenantsRepository = require('../repositories/tenantsRepository');
 const carteiraService = require('../services/carteiraService');
 const posvendasService = require('../services/posvendasService');
+const biCarteiraService = require('../services/biCarteiraService');
 
 const router = express.Router();
 
@@ -57,6 +58,28 @@ router.post('/recalcular-posvendas', requireJobSecret, async (req, res) => {
     return res.json({ tenants: tenantIds.length, apolices_movidas: total, erros });
   } catch (err) {
     console.error('[job.recalcular-posvendas] falhou', { error: err.message });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Recalcula os agregados de BI de todas as contas (snapshots por corretor/conta/período).
+router.post('/recalcular-bi', requireJobSecret, async (req, res) => {
+  try {
+    const tenantIds = await tenantsRepository.listCorretorIds();
+    let total = 0;
+    const erros = [];
+    for (const tenantId of tenantIds) {
+      try {
+        const r = await biCarteiraService.recalcular(tenantId);
+        total += r.snapshots;
+        biCarteiraService.invalidarCache(tenantId);
+      } catch (e) {
+        erros.push({ tenant_id: tenantId, error: e.message });
+      }
+    }
+    return res.json({ tenants: tenantIds.length, snapshots: total, erros });
+  } catch (err) {
+    console.error('[job.recalcular-bi] falhou', { error: err.message });
     return res.status(500).json({ error: err.message });
   }
 });
