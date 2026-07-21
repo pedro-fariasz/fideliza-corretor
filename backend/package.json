@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
+    "cron": "node scripts/run-jobs.js",
     "test": "node --test"
   },
   "dependencies": {
