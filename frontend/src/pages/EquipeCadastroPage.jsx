@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Hourglass } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import AuthShell, { authInputClasses } from '../components/AuthShell';
 import { homePathFor } from '../utils/homePath';
@@ -65,8 +66,8 @@ export default function EquipeCadastroPage() {
       <AuthShell band="equipe">
         <section className="w-full max-w-sm">
           <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-amber/15 text-2xl">
-              ⏳
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-amber/15 text-brand-amber">
+              <Hourglass size={22} aria-hidden="true" />
             </div>
             <h2 className="text-xl font-semibold text-brand-navy">Cadastro enviado</h2>
             <p className="mt-2 text-sm text-gray-600">

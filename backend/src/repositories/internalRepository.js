@@ -54,34 +54,46 @@ async function resumoPorTenant() {
     .eq('role', 'corretor');
   if (uErr) throw uErr;
 
-  // 2) Clientes, para agregar contagem/score por tenant.
+  // 2) Clientes, para agregar contagem/score/inadimplência/atividade por tenant.
   const { data: clientes, error: cErr } = await supabase
     .from('clientes')
-    .select('tenant_id, score_completude');
+    .select('tenant_id, score_completude, status, ultimo_contato_em');
   if (cErr) throw cErr;
 
-  const agg = new Map(); // tenant_id -> { total, soma, incompletos }
+  const agg = new Map(); // tenant_id -> { total, soma, incompletos, inadimplentes, ultima }
   for (const row of clientes || []) {
     const k = row.tenant_id;
-    if (!agg.has(k)) agg.set(k, { total: 0, soma: 0, incompletos: 0 });
+    if (!agg.has(k)) {
+      agg.set(k, { total: 0, soma: 0, incompletos: 0, inadimplentes: 0, ultima: null });
+    }
     const a = agg.get(k);
     a.total += 1;
     a.soma += row.score_completude || 0;
     if ((row.score_completude || 0) < 60) a.incompletos += 1;
+    if (row.status === 'inadimplente') a.inadimplentes += 1;
+    if (row.ultimo_contato_em) {
+      const t = new Date(row.ultimo_contato_em).getTime();
+      if (!Number.isNaN(t) && (a.ultima === null || t > a.ultima)) a.ultima = t;
+    }
   }
 
+  const zero = { total: 0, soma: 0, incompletos: 0, inadimplentes: 0, ultima: null };
   const vistos = new Set();
   const out = [];
   for (const c of corretores || []) {
     if (vistos.has(c.tenant_id)) continue; // 1 linha por tenant
     vistos.add(c.tenant_id);
-    const a = agg.get(c.tenant_id) || { total: 0, soma: 0, incompletos: 0 };
+    const a = agg.get(c.tenant_id) || zero;
     out.push({
       tenant_id: c.tenant_id,
       corretor: c.nome || c.email || '—',
       total_clientes: a.total,
       score_medio: a.total ? Math.round(a.soma / a.total) : 0,
       incompletos: a.incompletos,
+      inadimplentes: a.inadimplentes,
+      // "última atividade" = contato mais recente com algum cliente (não há
+      // rastreamento de login no schema). null quando nunca houve contato.
+      ultima_atividade: a.ultima ? new Date(a.ultima).toISOString() : null,
     });
   }
 
