@@ -17,6 +17,7 @@ const agendaRoutes = require('./routes/agenda');
 const equipeRoutes = require('./routes/equipe');
 const carteiraRoutes = require('./routes/carteira');
 const posvendasRoutes = require('./routes/posvendas');
+const biCarteiraRoutes = require('./routes/biCarteira');
 const adminRoutes = require('./routes/admin');
 const internoRoutes = require('./routes/interno');
 
@@ -74,6 +75,14 @@ function createApp() {
     requireFeature('posvendas'),
     requirePermissao('posvendas', 'ler'),
     posvendasRoutes
+  );
+  // BI de Carteira (Fase 3): gated por feature flag + permissão 'bi_carteira'.
+  app.use(
+    '/api/bi-carteira',
+    requireAtivo,
+    requireFeature('bi_carteira'),
+    requirePermissao('bi_carteira', 'ler'),
+    biCarteiraRoutes
   );
   app.use('/api/admin', adminRoutes);
   // Painel interno cross-tenant (gate por requireInternal dentro das rotas).

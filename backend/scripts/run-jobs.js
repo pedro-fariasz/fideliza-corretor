@@ -8,7 +8,7 @@
 //   node scripts/run-jobs.js
 // =============================================================================
 
-const JOBS = ['recalcular-carteira', 'recalcular-posvendas'];
+const JOBS = ['recalcular-carteira', 'recalcular-posvendas', 'recalcular-bi'];
 
 async function main() {
   const base = process.env.JOB_URL;

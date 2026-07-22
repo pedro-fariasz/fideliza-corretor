@@ -20,6 +20,7 @@ import VendasPage from './pages/corretor/VendasPage';
 import AgendaPage from './pages/corretor/AgendaPage';
 import CarteiraPage from './pages/corretor/CarteiraPage';
 import PosVendasPage from './pages/corretor/PosVendasPage';
+import InteligenciaPage from './pages/corretor/InteligenciaPage';
 import EquipePage from './pages/corretor/EquipePage';
 import ConfiguracoesPage from './pages/corretor/ConfiguracoesPage';
 
@@ -58,6 +59,7 @@ export default function App() {
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/carteira" element={<CarteiraPage />} />
             <Route path="/posvendas" element={<PosVendasPage />} />
+            <Route path="/inteligencia" element={<InteligenciaPage />} />
             <Route path="/equipe" element={<EquipePage />} />
             <Route path="/configuracoes" element={<ConfiguracoesPage />} />
           </Route>
