@@ -371,6 +371,14 @@ export const api = {
   biCarteiraCorretores() {
     return request('/api/bi-carteira/corretores');
   },
+
+  // --- Desempenho de Equipe (Fase 4) ----------------------------------------
+  desempenho(params = {}) {
+    return request(`/api/desempenho${toQuery(params)}`);
+  },
+  desempenhoVendedores() {
+    return request('/api/desempenho/vendedores');
+  },
 };
 
 // Monta querystring a partir de um objeto, ignorando vazios/undefined.

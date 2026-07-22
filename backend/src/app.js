@@ -18,6 +18,7 @@ const equipeRoutes = require('./routes/equipe');
 const carteiraRoutes = require('./routes/carteira');
 const posvendasRoutes = require('./routes/posvendas');
 const biCarteiraRoutes = require('./routes/biCarteira');
+const desempenhoRoutes = require('./routes/desempenho');
 const adminRoutes = require('./routes/admin');
 const internoRoutes = require('./routes/interno');
 
@@ -83,6 +84,14 @@ function createApp() {
     requireFeature('bi_carteira'),
     requirePermissao('bi_carteira', 'ler'),
     biCarteiraRoutes
+  );
+  // Desempenho de Equipe (Fase 4): gated por feature flag + permissão 'desempenho'.
+  app.use(
+    '/api/desempenho',
+    requireAtivo,
+    requireFeature('desempenho'),
+    requirePermissao('desempenho', 'ler'),
+    desempenhoRoutes
   );
   app.use('/api/admin', adminRoutes);
   // Painel interno cross-tenant (gate por requireInternal dentro das rotas).
