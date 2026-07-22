@@ -1,16 +1,34 @@
 import { useEffect, useState } from 'react';
+import {
+  Columns3,
+  List,
+  Workflow,
+  MessageSquareText,
+  Heart,
+  Inbox,
+  MessageCircle,
+  CheckCircle2,
+  ShoppingBag,
+  RotateCcw,
+  Save,
+  X,
+  Sparkles,
+} from 'lucide-react';
 import { api } from '../../services/api';
+import Avatar from '../../components/Avatar';
+import EmptyState from '../../components/EmptyState';
 
 // =============================================================================
 // Pós-Vendas (Fase 2) — esteira automática de relacionamento.
 // Um item de menu, 4 abas: Pipeline · Lista · Fluxos · Mensagens.
+// Redesign visual (mesmo design system do dashboard); comportamento preservado.
 // =============================================================================
 
 const ABAS = [
-  { key: 'pipeline', label: 'Pipeline' },
-  { key: 'lista', label: 'Lista' },
-  { key: 'fluxos', label: 'Fluxos' },
-  { key: 'mensagens', label: 'Mensagens' },
+  { key: 'pipeline', label: 'Pipeline', icon: Columns3 },
+  { key: 'lista', label: 'Lista', icon: List },
+  { key: 'fluxos', label: 'Fluxos', icon: Workflow },
+  { key: 'mensagens', label: 'Mensagens', icon: MessageSquareText },
 ];
 
 const GATILHOS = [
@@ -35,51 +53,102 @@ function renderExemplo(texto) {
   return texto.replace(/\[([A-ZÀ-Ú_]+)\]/g, (m, k) => (EXEMPLO[k] != null ? EXEMPLO[k] : ''));
 }
 
-function healthCls(v) {
-  if (v == null) return 'text-gray-400';
-  if (v >= 70) return 'text-green-600';
-  if (v >= 40) return 'text-brand-amber';
-  return 'text-red-600';
+// Estilo compartilhado de card (idêntico ao do dashboard).
+const CARD = 'rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-white/5';
+const INPUT =
+  'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40 dark:border-white/15 dark:bg-white/5 dark:text-white';
+
+// Saúde como pill com bolinha colorida (semântica de status).
+function HealthBadge({ value }) {
+  let tone = 'bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-300';
+  let dot = 'bg-gray-400';
+  if (value != null) {
+    if (value >= 70) {
+      tone = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300';
+      dot = 'bg-emerald-500';
+    } else if (value >= 40) {
+      tone = 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300';
+      dot = 'bg-amber-500';
+    } else {
+      tone = 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300';
+      dot = 'bg-red-500';
+    }
+  }
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${tone}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+      Saúde {value == null ? '—' : value}
+    </span>
+  );
 }
 
-function npsBadge(nps) {
+function NpsBadge({ nps }) {
   if (nps == null) return null;
-  const cls = nps >= 9 ? 'bg-green-100 text-green-700' : nps <= 6 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700';
-  return <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}>NPS {nps}</span>;
+  const cls =
+    nps >= 9
+      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+      : nps <= 6
+        ? 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300'
+        : 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300';
+  return <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}>NPS {nps}</span>;
 }
-
-const card = 'rounded-xl bg-white p-4 shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10';
 
 export default function PosVendasPage() {
   const [aba, setAba] = useState('pipeline');
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-gray-500 dark:text-gray-400">
-        A esteira move o cliente sozinho conforme o tempo passa. Configure os gatilhos e as mensagens por categoria.
-      </p>
-
-      <div className="flex gap-2 border-b border-gray-200 dark:border-white/10">
-        {ABAS.map((a) => (
-          <button
-            key={a.key}
-            type="button"
-            onClick={() => setAba(a.key)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
-              aba === a.key
-                ? 'border-brand-blue text-brand-blue'
-                : 'border-transparent text-gray-500 hover:text-brand-navy dark:text-gray-400 dark:hover:text-white'
-            }`}
-          >
-            {a.label}
-          </button>
-        ))}
+      {/* Header de contexto */}
+      <div className="flex items-start gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue">
+          <Heart size={20} />
+        </span>
+        <div>
+          <h2 className="font-heading text-lg font-semibold text-brand-navy dark:text-white">
+            Esteira de relacionamento
+          </h2>
+          <p className="mt-0.5 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+            O cliente avança sozinho conforme o tempo passa. Configure os gatilhos e as mensagens por
+            categoria — e acompanhe cada etapa aqui.
+          </p>
+        </div>
       </div>
 
-      {aba === 'pipeline' && <PipelineTab />}
-      {aba === 'lista' && <ListaTab />}
-      {aba === 'fluxos' && <FluxosTab />}
-      {aba === 'mensagens' && <MensagensTab />}
+      {/* Abas — pill control com ícones */}
+      <div
+        role="tablist"
+        aria-label="Seções de pós-vendas"
+        className="inline-flex max-w-full gap-1 overflow-x-auto rounded-xl border border-gray-100 bg-gray-50 p-1 dark:border-white/10 dark:bg-white/5"
+      >
+        {ABAS.map((a) => {
+          const Icon = a.icon;
+          const active = aba === a.key;
+          return (
+            <button
+              key={a.key}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setAba(a.key)}
+              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 ${
+                active
+                  ? 'bg-white text-brand-blue shadow-sm dark:bg-white/10 dark:text-white'
+                  : 'text-gray-500 hover:bg-white/60 hover:text-brand-navy dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'
+              }`}
+            >
+              <Icon size={16} className={active ? '' : 'opacity-70'} />
+              {a.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="animate-rise">
+        {aba === 'pipeline' && <PipelineTab />}
+        {aba === 'lista' && <ListaTab />}
+        {aba === 'fluxos' && <FluxosTab />}
+        {aba === 'mensagens' && <MensagensTab />}
+      </div>
     </div>
   );
 }
@@ -94,6 +163,23 @@ async function abrirWhatsApp(apoliceId, etapaChave) {
   } catch (err) {
     alert(err.message || 'Não foi possível montar a mensagem.');
   }
+}
+
+// Erro/loading compartilhados.
+function ErrorBox({ children }) {
+  return (
+    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+      {children}
+    </div>
+  );
+}
+function Loading() {
+  return (
+    <div className="flex items-center justify-center gap-2 py-16 text-sm text-gray-500 dark:text-gray-400">
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-brand-blue" />
+      Carregando...
+    </div>
+  );
 }
 
 // =============================================================================
@@ -115,28 +201,35 @@ function PipelineTab() {
       setLoading(false);
     }
   }
-  useEffect(() => { carregar(); }, []);
+  useEffect(() => {
+    carregar();
+  }, []);
 
   async function marcarFeito(apoliceId) {
     try {
       await api.posvendasMarcarFeito(apoliceId);
       await carregar();
-    } catch (err) { alert(err.message || 'Erro ao marcar como feito.'); }
+    } catch (err) {
+      alert(err.message || 'Erro ao marcar como feito.');
+    }
   }
 
-  if (loading) return <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando...</p>;
-  if (error) return <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>;
+  if (loading) return <Loading />;
+  if (error) return <ErrorBox>{error}</ErrorBox>;
 
   const { colunas, cards, contadores } = dados;
   const vazio = (contadores.total || 0) === 0;
 
   if (vazio) {
     return (
-      <div className={`${card} text-center`}>
-        <p className="text-gray-600 dark:text-gray-300">Nenhuma apólice na esteira ainda.</p>
-        <p className="mt-1 text-sm text-gray-400">
-          As apólices entram automaticamente conforme os gatilhos (a primeira etapa é no dia seguinte à venda).
-        </p>
+      <div className={`${CARD} p-6`}>
+        <EmptyState
+          icon={Inbox}
+          title="Nenhuma apólice na esteira ainda"
+          description="As apólices entram automaticamente conforme os gatilhos — a primeira etapa é no dia seguinte à venda."
+          cta={{ to: '/vendas', label: 'Ver vendas' }}
+        />
+        <NextSteps />
       </div>
     );
   }
@@ -145,37 +238,96 @@ function PipelineTab() {
     <div className="flex gap-4 overflow-x-auto pb-2">
       {colunas.map((col) => (
         <div key={col.chave} className="w-72 shrink-0">
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between px-1">
             <h3 className="font-heading text-sm font-semibold text-brand-navy dark:text-white">{col.nome}</h3>
-            <span className="text-xs text-gray-400">{contadores[col.chave] || 0}</span>
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-white/10 dark:text-gray-300">
+              {contadores[col.chave] || 0}
+            </span>
           </div>
           <div className="space-y-3">
             {(cards[col.chave] || []).map((c) => (
-              <div key={c.id} className={card}>
-                <div className="flex items-start justify-between gap-2">
-                  <p className="font-medium text-brand-navy dark:text-white">{c.cliente_nome}</p>
-                  {c.concluido && <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700">Feito</span>}
+              <div
+                key={c.id}
+                className={`${CARD} p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}
+              >
+                <div className="flex items-start gap-3">
+                  <Avatar nome={c.cliente_nome} size="md" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="truncate font-medium text-brand-navy dark:text-white">{c.cliente_nome}</p>
+                      {c.concluido && (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                          <CheckCircle2 size={11} /> Feito
+                        </span>
+                      )}
+                    </div>
+                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">{c.produto_nome}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{c.produto_nome}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-                  <span className="text-gray-400">{c.dias_na_etapa != null ? `${c.dias_na_etapa}d na etapa` : ''}</span>
-                  <span className={healthCls(c.health_score)}>Saúde {c.health_score == null ? '—' : c.health_score}</span>
-                  {npsBadge(c.nps)}
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <HealthBadge value={c.health_score} />
+                  <NpsBadge nps={c.nps} />
+                  {c.dias_na_etapa != null && (
+                    <span className="text-[11px] text-gray-400">{c.dias_na_etapa}d na etapa</span>
+                  )}
                 </div>
-                <div className="mt-3 flex gap-3 text-xs font-medium">
-                  <button type="button" onClick={() => abrirWhatsApp(c.id, c.etapa_chave)} className="text-brand-blue hover:text-brand-blue-dark">WhatsApp</button>
+
+                <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3 dark:border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => abrirWhatsApp(c.id, c.etapa_chave)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25"
+                  >
+                    <MessageCircle size={13} /> WhatsApp
+                  </button>
                   {!c.concluido && col.chave !== 'aguardando' && (
-                    <button type="button" onClick={() => marcarFeito(c.id)} className="text-gray-500 hover:text-brand-navy dark:text-gray-400 dark:hover:text-white">Marcar feito</button>
+                    <button
+                      type="button"
+                      onClick={() => marcarFeito(c.id)}
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-brand-navy dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-white"
+                    >
+                      <CheckCircle2 size={13} /> Marcar feito
+                    </button>
                   )}
                 </div>
               </div>
             ))}
             {(cards[col.chave] || []).length === 0 && (
-              <p className="px-1 text-xs text-gray-300 dark:text-gray-600">—</p>
+              <div className="rounded-2xl border border-dashed border-gray-200 py-6 text-center text-xs text-gray-300 dark:border-white/10 dark:text-gray-600">
+                Vazio
+              </div>
             )}
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// Sugestões de próximos passos no estado vazio.
+function NextSteps() {
+  const passos = [
+    { icon: ShoppingBag, texto: 'Registre uma venda — a apólice entra na esteira automaticamente.' },
+    { icon: Workflow, texto: 'Ajuste os gatilhos de cada etapa na aba Fluxos.' },
+    { icon: MessageSquareText, texto: 'Personalize as mensagens por categoria na aba Mensagens.' },
+  ];
+  return (
+    <div className="mx-auto mt-6 grid max-w-2xl gap-3 sm:grid-cols-3">
+      {passos.map((p, i) => {
+        const Icon = p.icon;
+        return (
+          <div
+            key={i}
+            className="rounded-xl border border-gray-100 bg-gray-50/60 p-3 text-left dark:border-white/10 dark:bg-white/5"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-blue/10 text-brand-blue">
+              <Icon size={16} />
+            </span>
+            <p className="mt-2 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{p.texto}</p>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -196,66 +348,144 @@ function ListaTab() {
     try {
       const itens = await api.posvendasCrossSell(linha.id);
       setCross({ cliente: linha.cliente_nome, itens });
-    } catch (err) { alert(err.message || 'Erro ao buscar cross-sell.'); }
+    } catch (err) {
+      alert(err.message || 'Erro ao buscar cross-sell.');
+    }
   }
 
-  if (error) return <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>;
-  if (!linhas) return <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando...</p>;
-  if (linhas.length === 0) return <div className={`${card} text-center text-gray-500`}>Nenhuma apólice na esteira ainda.</div>;
+  if (error) return <ErrorBox>{error}</ErrorBox>;
+  if (!linhas) return <Loading />;
+  if (linhas.length === 0)
+    return (
+      <div className={`${CARD} p-6`}>
+        <EmptyState
+          icon={Inbox}
+          title="Nenhuma apólice na esteira ainda"
+          description="Assim que você registrar uma venda, o cliente aparece aqui para acompanhamento."
+          cta={{ to: '/vendas', label: 'Ver vendas' }}
+        />
+      </div>
+    );
 
   return (
     <>
-      <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-white/10">
-          <thead>
-            <tr className="text-left text-xs uppercase tracking-wide text-gray-400">
-              <th className="px-4 py-3">Cliente</th>
-              <th className="px-4 py-3">Saúde</th>
-              <th className="px-4 py-3">Produto</th>
-              <th className="px-4 py-3">Etapa</th>
-              <th className="px-4 py-3">Progresso</th>
-              <th className="px-4 py-3">Dias</th>
-              <th className="px-4 py-3">NPS</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 text-sm dark:divide-white/5">
-            {linhas.map((l) => (
-              <tr key={l.id}>
-                <td className="px-4 py-3 font-medium text-brand-navy dark:text-white">{l.cliente_nome}</td>
-                <td className={`px-4 py-3 font-medium ${healthCls(l.health_score)}`}>{l.health_score == null ? '—' : l.health_score}</td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{l.produto_nome}</td>
-                <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{l.etapa_nome}</td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{l.progresso}%</td>
-                <td className="px-4 py-3 text-gray-400">{l.dias_na_etapa == null ? '—' : `${l.dias_na_etapa}d`}</td>
-                <td className="px-4 py-3">{npsBadge(l.nps) || <span className="text-gray-300">—</span>}</td>
-                <td className="px-4 py-3 text-right">
-                  <button type="button" onClick={() => verCrossSell(l)} className="text-sm font-medium text-brand-blue hover:text-brand-blue-dark">Cross-sell</button>
-                </td>
+      <div className={`${CARD} overflow-hidden`}>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wide text-gray-400 dark:border-white/10">
+                <th className="px-4 py-3">Cliente</th>
+                <th className="px-4 py-3">Saúde</th>
+                <th className="px-4 py-3">Produto</th>
+                <th className="px-4 py-3">Etapa</th>
+                <th className="px-4 py-3 w-40">Progresso</th>
+                <th className="px-4 py-3">Dias</th>
+                <th className="px-4 py-3">NPS</th>
+                <th className="px-4 py-3" />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+              {linhas.map((l) => (
+                <tr key={l.id} className="transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar nome={l.cliente_nome} size="sm" />
+                      <span className="font-medium text-brand-navy dark:text-white">{l.cliente_nome}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <HealthBadge value={l.health_score} />
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{l.produto_nome}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{l.etapa_nome}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
+                        <div
+                          className="h-full rounded-full bg-brand-blue"
+                          style={{ width: `${Math.max(0, Math.min(100, l.progresso || 0))}%` }}
+                        />
+                      </div>
+                      <span className="text-xs tabular-nums text-gray-400">{l.progresso}%</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-400">{l.dias_na_etapa == null ? '—' : `${l.dias_na_etapa}d`}</td>
+                  <td className="px-4 py-3">{<NpsBadge nps={l.nps} /> || <span className="text-gray-300">—</span>}</td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => verCrossSell(l)}
+                      className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
+                    >
+                      <Sparkles size={14} /> Cross-sell
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {cross && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onMouseDown={() => setCross(null)}>
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-brand-navy dark:ring-1 dark:ring-white/10" onMouseDown={(e) => e.stopPropagation()}>
-            <h3 className="font-heading text-lg font-semibold text-brand-navy dark:text-white">Oportunidades para {cross.cliente}</h3>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-brand-navy/50 p-4 backdrop-blur-sm"
+          onMouseDown={() => setCross(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-brand-navy"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-blue/10 text-brand-blue">
+                  <Sparkles size={18} />
+                </span>
+                <h3 className="font-heading text-lg font-semibold text-brand-navy dark:text-white">
+                  Oportunidades
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCross(null)}
+                aria-label="Fechar"
+                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/10"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Para {cross.cliente}</p>
+
             {cross.itens.length === 0 ? (
-              <p className="mt-3 text-sm text-gray-500">O cliente já tem todos os produtos ativos da conta. 🎯</p>
+              <p className="mt-4 rounded-xl bg-emerald-50 px-3 py-3 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                O cliente já tem todos os produtos ativos da conta. 🎯
+              </p>
             ) : (
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-4 space-y-2">
                 {cross.itens.map((p) => (
-                  <li key={p.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm dark:bg-white/5">
-                    <span className="text-brand-navy dark:text-white">{p.nome}</span>
-                    <span className="text-xs text-gray-400">comissão {p.percentual}%</span>
+                  <li
+                    key={p.id}
+                    className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                  >
+                    <span className="flex items-center gap-2 text-brand-navy dark:text-white">
+                      <ShoppingBag size={15} className="text-brand-blue" />
+                      {p.nome}
+                    </span>
+                    <span className="rounded-full bg-brand-blue/10 px-2 py-0.5 text-xs font-semibold text-brand-blue">
+                      {p.percentual}%
+                    </span>
                   </li>
                 ))}
               </ul>
             )}
             <div className="mt-5 flex justify-end">
-              <button type="button" onClick={() => setCross(null)} className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-white">Fechar</button>
+              <button
+                type="button"
+                onClick={() => setCross(null)}
+                className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+              >
+                Fechar
+              </button>
             </div>
           </div>
         </div>
@@ -269,7 +499,9 @@ function ListaTab() {
 // =============================================================================
 function useCategorias() {
   const [cats, setCats] = useState([]);
-  useEffect(() => { api.posvendasCategorias().then(setCats).catch(() => setCats([])); }, []);
+  useEffect(() => {
+    api.posvendasCategorias().then(setCats).catch(() => setCats([]));
+  }, []);
   return cats;
 }
 
@@ -278,9 +510,14 @@ function CategoriaSelect({ cats, valor, onChange }) {
     <select
       value={valor}
       onChange={(e) => onChange(e.target.value)}
-      className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+      aria-label="Categoria"
+      className={`${INPUT} w-auto`}
     >
-      {cats.map((c) => <option key={c.valor} value={c.valor}>{c.label}</option>)}
+      {cats.map((c) => (
+        <option key={c.valor} value={c.valor}>
+          {c.label}
+        </option>
+      ))}
     </select>
   );
 }
@@ -300,9 +537,13 @@ function FluxosTab() {
     try {
       const r = await api.posvendasFluxo(cat);
       setEtapas(r.etapas);
-    } catch (err) { setError(err.message || 'Erro ao carregar o fluxo.'); }
+    } catch (err) {
+      setError(err.message || 'Erro ao carregar o fluxo.');
+    }
   }
-  useEffect(() => { carregar(categoria); }, [categoria]);
+  useEffect(() => {
+    carregar(categoria);
+  }, [categoria]);
 
   function patchLocal(id, campo, valor) {
     setEtapas((es) => es.map((e) => (e.id === id ? { ...e, [campo]: valor } : e)));
@@ -317,53 +558,98 @@ function FluxosTab() {
         ativo: etapa.ativo,
         ordem: Number(etapa.ordem),
       });
-    } catch (err) { alert(err.message || 'Erro ao salvar a etapa.'); }
+    } catch (err) {
+      alert(err.message || 'Erro ao salvar a etapa.');
+    }
   }
 
   async function restaurar() {
-    if (!window.confirm('Restaurar o fluxo de fábrica desta categoria? Isso descarta as personalizações das etapas e mensagens.')) return;
+    if (
+      !window.confirm(
+        'Restaurar o fluxo de fábrica desta categoria? Isso descarta as personalizações das etapas e mensagens.'
+      )
+    )
+      return;
     try {
       const r = await api.posvendasRestaurarFluxo(categoria);
       setEtapas(r.etapas);
-    } catch (err) { alert(err.message || 'Erro ao restaurar.'); }
+    } catch (err) {
+      alert(err.message || 'Erro ao restaurar.');
+    }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <CategoriaSelect cats={cats} valor={categoria} onChange={setCategoria} />
-        <button type="button" onClick={restaurar} className="text-sm font-medium text-gray-500 hover:text-brand-navy dark:text-gray-400 dark:hover:text-white">
-          Restaurar padrão da categoria
+        <button
+          type="button"
+          onClick={restaurar}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition-colors hover:text-brand-navy dark:text-gray-400 dark:hover:text-white"
+        >
+          <RotateCcw size={14} /> Restaurar padrão da categoria
         </button>
       </div>
 
-      {error && <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {error && <ErrorBox>{error}</ErrorBox>}
       {!etapas ? (
-        <p className="py-8 text-center text-gray-500 dark:text-gray-400">Carregando...</p>
+        <Loading />
       ) : (
         <div className="space-y-3">
           {etapas.map((e) => (
-            <div key={e.id} className={`${card} grid grid-cols-1 gap-3 sm:grid-cols-12 sm:items-end`}>
+            <div
+              key={e.id}
+              className={`${CARD} grid grid-cols-1 gap-3 p-4 transition-shadow hover:shadow-md sm:grid-cols-12 sm:items-end`}
+            >
               <div className="sm:col-span-3">
                 <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Etapa</label>
-                <input value={e.nome} onChange={(ev) => patchLocal(e.id, 'nome', ev.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue" />
+                <input value={e.nome} onChange={(ev) => patchLocal(e.id, 'nome', ev.target.value)} className={INPUT} />
               </div>
               <div className="sm:col-span-4">
                 <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Gatilho</label>
-                <select value={e.gatilho_tipo} onChange={(ev) => patchLocal(e.id, 'gatilho_tipo', ev.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue">
-                  {GATILHOS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+                <select
+                  value={e.gatilho_tipo}
+                  onChange={(ev) => patchLocal(e.id, 'gatilho_tipo', ev.target.value)}
+                  className={INPUT}
+                >
+                  {GATILHOS.map((g) => (
+                    <option key={g.value} value={g.value}>
+                      {g.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Dias</label>
-                <input type="number" value={e.gatilho_dias} disabled={e.gatilho_tipo === 'aniversario'} onChange={(ev) => patchLocal(e.id, 'gatilho_dias', ev.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-gray-100" />
+                <input
+                  type="number"
+                  value={e.gatilho_dias}
+                  disabled={e.gatilho_tipo === 'aniversario'}
+                  onChange={(ev) => patchLocal(e.id, 'gatilho_dias', ev.target.value)}
+                  className={`${INPUT} disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-white/10`}
+                />
               </div>
               <div className="flex items-center gap-2 sm:col-span-2">
-                <input id={`ativo-${e.id}`} type="checkbox" checked={e.ativo} onChange={(ev) => patchLocal(e.id, 'ativo', ev.target.checked)} className="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" />
-                <label htmlFor={`ativo-${e.id}`} className="text-sm text-gray-600 dark:text-gray-300">Ativa</label>
+                <input
+                  id={`ativo-${e.id}`}
+                  type="checkbox"
+                  checked={e.ativo}
+                  onChange={(ev) => patchLocal(e.id, 'ativo', ev.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
+                />
+                <label htmlFor={`ativo-${e.id}`} className="text-sm text-gray-600 dark:text-gray-300">
+                  Ativa
+                </label>
               </div>
               <div className="sm:col-span-1">
-                <button type="button" onClick={() => salvarEtapa(e)} className="w-full rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark">Salvar</button>
+                <button
+                  type="button"
+                  onClick={() => salvarEtapa(e)}
+                  aria-label="Salvar etapa"
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark"
+                >
+                  <Save size={14} /> Salvar
+                </button>
               </div>
             </div>
           ))}
@@ -387,9 +673,13 @@ function MensagensTab() {
     setError('');
     try {
       setMsgs(await api.posvendasMensagens(cat));
-    } catch (err) { setError(err.message || 'Erro ao carregar as mensagens.'); }
+    } catch (err) {
+      setError(err.message || 'Erro ao carregar as mensagens.');
+    }
   }
-  useEffect(() => { carregar(categoria); }, [categoria]);
+  useEffect(() => {
+    carregar(categoria);
+  }, [categoria]);
 
   function patchLocal(chave, texto) {
     setMsgs((ms) => ms.map((m) => (m.etapa_chave === chave ? { ...m, texto } : m)));
@@ -399,48 +689,78 @@ function MensagensTab() {
     try {
       const salva = await api.posvendasSalvarMensagem(categoria, m.etapa_chave, m.texto);
       patchLocal(m.etapa_chave, salva.texto);
-    } catch (err) { alert(err.message || 'Erro ao salvar a mensagem.'); }
+    } catch (err) {
+      alert(err.message || 'Erro ao salvar a mensagem.');
+    }
   }
 
   async function redefinir(m) {
     try {
       const nova = await api.posvendasRedefinirMensagem(categoria, m.etapa_chave);
       patchLocal(m.etapa_chave, nova.texto);
-    } catch (err) { alert(err.message || 'Erro ao redefinir.'); }
+    } catch (err) {
+      alert(err.message || 'Erro ao redefinir.');
+    }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <CategoriaSelect cats={cats} valor={categoria} onChange={setCategoria} />
-        <p className="text-xs text-gray-400">
-          Variáveis: {VARIAVEIS.map((v) => <code key={v} className="mx-0.5 rounded bg-gray-100 px-1 dark:bg-white/10">{v}</code>)}
+        <p className="flex flex-wrap items-center gap-1 text-xs text-gray-400">
+          <span className="font-medium">Variáveis:</span>
+          {VARIAVEIS.map((v) => (
+            <code
+              key={v}
+              className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-600 dark:bg-white/10 dark:text-gray-300"
+            >
+              {v}
+            </code>
+          ))}
         </p>
       </div>
 
-      {error && <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {error && <ErrorBox>{error}</ErrorBox>}
       {!msgs ? (
-        <p className="py-8 text-center text-gray-500 dark:text-gray-400">Carregando...</p>
+        <Loading />
       ) : (
         <div className="space-y-4">
           {msgs.map((m) => (
-            <div key={m.etapa_chave} className={card}>
+            <div key={m.etapa_chave} className={`${CARD} p-4`}>
               <div className="mb-2 flex items-center justify-between">
-                <h4 className="font-heading text-sm font-semibold text-brand-navy dark:text-white capitalize">{m.etapa_chave.replace(/_/g, ' ')}</h4>
-                {m.is_padrao && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 dark:bg-white/10">Padrão</span>}
+                <h4 className="font-heading text-sm font-semibold capitalize text-brand-navy dark:text-white">
+                  {m.etapa_chave.replace(/_/g, ' ')}
+                </h4>
+                {m.is_padrao && (
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:bg-white/10 dark:text-gray-300">
+                    Padrão
+                  </span>
+                )}
               </div>
               <textarea
                 value={m.texto}
                 onChange={(e) => patchLocal(m.etapa_chave, e.target.value)}
                 rows={3}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+                className={INPUT}
               />
-              <div className="mt-2 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-white/5 dark:text-gray-300">
+              <div className="mt-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
                 <span className="font-medium text-gray-400">Prévia:</span> {renderExemplo(m.texto)}
               </div>
-              <div className="mt-3 flex gap-3 text-sm font-medium">
-                <button type="button" onClick={() => salvar(m)} className="rounded-lg bg-brand-blue px-3 py-1.5 text-white hover:bg-brand-blue-dark">Salvar</button>
-                <button type="button" onClick={() => redefinir(m)} className="text-gray-500 hover:text-brand-navy dark:text-gray-400 dark:hover:text-white">Redefinir esta mensagem</button>
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => salvar(m)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark"
+                >
+                  <Save size={14} /> Salvar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => redefinir(m)}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-brand-navy dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                  <RotateCcw size={14} /> Redefinir
+                </button>
               </div>
             </div>
           ))}
