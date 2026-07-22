@@ -5,7 +5,7 @@ import CorretorLayout from './components/CorretorLayout';
 import InternaLayout from './components/InternaLayout';
 
 // Públicas
-import LoginPage from './pages/LoginPage';
+import LandingPage from './pages/LandingPage';
 import CadastroPage from './pages/CadastroPage';
 import EquipeLoginPage from './pages/EquipeLoginPage';
 import EquipeCadastroPage from './pages/EquipeCadastroPage';
@@ -33,8 +33,8 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Públicas — Fluxo 1 (corretor) */}
-          <Route path="/login" element={<LoginPage />} />
+          {/* Públicas — Fluxo 1 (corretor) — landing + login em modal */}
+          <Route path="/login" element={<LandingPage />} />
           <Route path="/cadastro" element={<CadastroPage />} />
 
           {/* Públicas — Fluxo 2 (equipe interna) */}

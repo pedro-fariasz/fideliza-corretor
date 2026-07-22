@@ -27,4 +27,120 @@
   h6 {
     font-family: var(--font-heading);
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ── Landing page — dinamismo (scroll reveal, glow, float, shimmer) ────────────
+   Animações leves em CSS puro, disparadas por IntersectionObserver (hook
+   useScrollReveal). Sem dependência de biblioteca de animação. */
+
+/* Reveal ao entrar na viewport: fade-in + slide-up. O JS adiciona .is-visible. */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Flutuação sutil (mockups do hero) e parallax leve. */
+@keyframes fideliza-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+.animate-float {
+  animation: fideliza-float 6s ease-in-out infinite;
+}
+.animate-float-slow {
+  animation: fideliza-float 9s ease-in-out infinite;
+}
+
+/* Brilho que cruza os botões CTA no hover. */
+@keyframes fideliza-shine {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(220%);
+  }
+}
+.cta-shine {
+  position: relative;
+  overflow: hidden;
+}
+.cta-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.cta-shine:hover::after {
+  animation: fideliza-shine 0.9s ease;
+}
+
+/* Shimmer para skeletons de mockup. */
+@keyframes fideliza-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  animation: fideliza-shimmer 1.6s infinite;
+}
+
+/* Respeita quem pediu menos movimento. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .animate-float,
+  .animate-float-slow {
+    animation: none;
+  }
+  .cta-shine:hover::after,
+  .shimmer::after {
+    animation: none;
+  }
 }
