@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import Logo from './Logo';
 import ThemeToggle from './ThemeToggle';
+import Avatar from './Avatar';
 
 // =============================================================================
 // SidebarShell — casca de navegação responsiva. Reutilizada pelos DOIS shells
@@ -60,16 +62,30 @@ export default function SidebarShell({ items, badge = null, title, children }) {
             </h1>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <span className="hidden max-w-[10rem] truncate text-sm text-gray-500 sm:inline dark:text-gray-300">
-              {nome}
-            </span>
             <ThemeToggle />
+            <div className="hidden items-center gap-2 rounded-full border border-gray-200 py-1 pl-1 pr-1.5 sm:flex dark:border-white/10">
+              <Avatar nome={nome} size="sm" />
+              <span className="max-w-[9rem] truncate text-sm font-medium text-brand-navy dark:text-gray-100">
+                {nome}
+              </span>
+              <button
+                type="button"
+                onClick={signOut}
+                aria-label="Sair"
+                title="Sair"
+                className="ml-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
+              >
+                <LogOut size={15} />
+              </button>
+            </div>
+            {/* Mobile: só o botão sair (avatar/nome ocupam espaço demais) */}
             <button
               type="button"
               onClick={signOut}
-              className="text-sm text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
+              aria-label="Sair"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 sm:hidden dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
             >
-              Sair
+              <LogOut size={17} />
             </button>
           </div>
         </header>
@@ -83,9 +99,10 @@ export default function SidebarShell({ items, badge = null, title, children }) {
 // Conteúdo da sidebar (logo + navegação), compartilhado entre a fixa e o drawer.
 function SidebarContent({ items, badge, onNavigate }) {
   const linkBase =
-    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors';
-  const linkActive = 'bg-brand-blue text-white';
-  const linkIdle = 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10';
+    'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200';
+  const linkActive = 'bg-brand-blue text-white shadow-sm shadow-brand-blue/30';
+  const linkIdle =
+    'text-gray-600 hover:bg-brand-blue/5 hover:text-brand-blue dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white';
 
   return (
     <>
@@ -116,7 +133,11 @@ function SidebarContent({ items, badge, onNavigate }) {
                 (typeof Icon === 'string' ? (
                   <span aria-hidden="true">{Icon}</span>
                 ) : (
-                  <Icon size={18} className="shrink-0" aria-hidden="true" />
+                  <Icon
+                    size={18}
+                    className="shrink-0 transition-transform duration-200 group-hover:scale-110"
+                    aria-hidden="true"
+                  />
                 ))}
               {item.label}
             </NavLink>
