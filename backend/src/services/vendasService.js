@@ -3,7 +3,9 @@ const comissoesRepository = require('../repositories/comissoesRepository');
 const produtosRepository = require('../repositories/produtosRepository');
 const leadsRepository = require('../repositories/leadsRepository');
 const interacoesRepository = require('../repositories/interacoesRepository');
+const carteiraClientesRepository = require('../repositories/carteiraClientesRepository');
 const comissaoService = require('./comissaoService');
+const atividadesService = require('./atividadesService');
 const { resolverDonoIds, donoPermitido } = require('./escopoService');
 const { FEATURE_FLAGS } = require('../config/constants');
 
@@ -52,6 +54,46 @@ async function registrarInteracaoLead(tenantId, leadId, usuarioId, tipo, descric
 
 function formatBRL(v) {
   return `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// Ponte lead -> cliente: toda venda concluída com lead promove o lead a
+// carteira_clientes (se ainda não houver um cliente para ele neste tenant).
+// Idempotente (SELECT antes de INSERT) e nunca quebra a venda se falhar —
+// o registro financeiro (venda + comissões) já está feito.
+async function promoverLeadParaCliente(tenantId, venda, lead) {
+  if (!lead) return null;
+  try {
+    const existente = await carteiraClientesRepository.findByLead(tenantId, lead.id);
+    if (existente) return existente;
+
+    const cliente = await carteiraClientesRepository.create(tenantId, {
+      lead_id: lead.id,
+      nome: lead.nome,
+      cpf_cnpj: lead.cpf_cnpj || null,
+      telefone: lead.telefone || null,
+      email: lead.email || null,
+      tipo_cliente: 'novo',
+      data_promovido_base: null,
+      plataforma_descarga_id: null,
+    });
+
+    await atividadesService.registrar(tenantId, {
+      entidade: 'cliente',
+      entidade_id: cliente.id,
+      acao: 'promovido_de_lead',
+      detalhes: { lead_id: lead.id, venda_id: venda.id },
+    });
+
+    return cliente;
+  } catch (err) {
+    console.error('[vendasService.criar] venda ok, mas falhou ao promover lead a cliente', {
+      tenant_id: tenantId,
+      venda_id: venda.id,
+      lead_id: lead.id,
+      error: err.message,
+    });
+    return null;
+  }
 }
 
 /**
@@ -153,6 +195,12 @@ async function criar(tenantId, input, usuario) {
       'sistema',
       `Venda registrada: ${formatBRL(valor)} — ${produto.nome} (${parcelas.length}x de comissão).`
     );
+  }
+
+  // Venda concluída com lead sempre promove o lead a cliente da carteira
+  // (independe da feature 'carteira' — a tabela existe desde a migration 010).
+  if (venda.status === 'concluida') {
+    await promoverLeadParaCliente(tenantId, venda, lead);
   }
 
   // Fase 1: venda gera apólice automaticamente (só quando a carteira está ativa,

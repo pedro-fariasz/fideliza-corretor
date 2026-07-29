@@ -73,4 +73,13 @@ async function cancelar(req, res, next) {
   }
 }
 
-module.exports = { pipeline, listar, obter, metricas, negocioAvulso, renovar, cancelar };
+async function cancelarCliente(req, res, next) {
+  try {
+    const data = await carteiraService.cancelarCliente(req.tenantId, req.params.id, req.body, req.user);
+    return res.json(data);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { pipeline, listar, obter, metricas, negocioAvulso, renovar, cancelar, cancelarCliente };

@@ -55,6 +55,20 @@ async function create({ id, tenantId, email, nome, role, status, papelConta, car
   return data;
 }
 
+// O corretor dono do tenant (role='corretor'). Cada tenant de corretor tem
+// exatamente um. Uso restrito a JOBS internos (cron), nunca em rota de usuário.
+async function findCorretorDoTenant(tenantId) {
+  const { data, error } = await supabase
+    .from('users')
+    .select(CAMPOS)
+    .eq('tenant_id', tenantId)
+    .eq('role', 'corretor')
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
 // Lista os usuários de uma conta (gestão de equipe).
 async function listByTenant(tenantId) {
   const { data, error } = await supabase
@@ -155,6 +169,7 @@ module.exports = {
   findById,
   findByEmail,
   findByIdInTenant,
+  findCorretorDoTenant,
   create,
   listByTenant,
   listSubordinadoIds,
