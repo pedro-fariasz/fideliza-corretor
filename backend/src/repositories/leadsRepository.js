@@ -19,6 +19,13 @@ const WRITABLE_COLUMNS = [
   'ultimo_contato_em',
   'status',
   'motivo_perda',
+  'origem_canal',
+  'campanha_id',
+  'anuncio_id',
+  'indicado_por_cliente_id',
+  'fbclid',
+  'gclid',
+  'ctwa_clid',
 ];
 
 function pickWritable(payload) {

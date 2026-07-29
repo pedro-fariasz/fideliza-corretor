@@ -1,7 +1,7 @@
 const { supabase } = require('../config/supabase');
 
 // lembrete_enviado é gerido pelo cron de lembrete, nunca pelo cliente.
-const WRITABLE_COLUMNS = ['usuario_id', 'lead_id', 'titulo', 'descricao', 'data_inicio', 'data_fim'];
+const WRITABLE_COLUMNS = ['usuario_id', 'lead_id', 'titulo', 'descricao', 'data_inicio', 'data_fim', 'origem'];
 
 function pickWritable(payload) {
   const out = {};

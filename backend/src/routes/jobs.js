@@ -62,6 +62,29 @@ router.post('/recalcular-posvendas', requireJobSecret, async (req, res) => {
   }
 });
 
+// Agenda a retomada de contato dos clientes cancelados cuja data de retomada
+// venceu (carteira_clientes.tentar_recuperar_em <= hoje). Idempotente: o campo
+// é zerado após o compromisso ser criado, então não reprocessa o mesmo cliente.
+router.post('/retomada-contato', requireJobSecret, async (req, res) => {
+  try {
+    const tenantIds = await tenantsRepository.listCorretorIds();
+    let total = 0;
+    const erros = [];
+    for (const tenantId of tenantIds) {
+      try {
+        const r = await carteiraService.retomarContatos(tenantId);
+        total += r.processados;
+      } catch (e) {
+        erros.push({ tenant_id: tenantId, error: e.message });
+      }
+    }
+    return res.json({ processados: total, tenants: tenantIds.length, erros });
+  } catch (err) {
+    console.error('[job.retomada-contato] falhou', { error: err.message });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Recalcula os agregados de BI de todas as contas (snapshots por corretor/conta/período).
 router.post('/recalcular-bi', requireJobSecret, async (req, res) => {
   try {

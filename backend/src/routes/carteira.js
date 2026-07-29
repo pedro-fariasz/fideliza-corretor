@@ -16,5 +16,6 @@ router.get('/apolices/:id', carteiraController.obter);
 router.post('/negocio-avulso', escrever, carteiraController.negocioAvulso);
 router.post('/apolices/:id/renovar', escrever, carteiraController.renovar);
 router.patch('/apolices/:id/cancelar', escrever, carteiraController.cancelar);
+router.post('/:id/cancelar', escrever, carteiraController.cancelarCliente);
 
 module.exports = router;

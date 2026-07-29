@@ -1,7 +1,26 @@
 const { supabase } = require('../config/supabase');
 
-const CAMPOS = 'id, tenant_id, lead_id, nome, telefone, email, empresa, data_nascimento, nps, health_score, criado_em, atualizado_em';
-const WRITABLE = ['lead_id', 'nome', 'telefone', 'email', 'empresa', 'data_nascimento', 'nps', 'health_score'];
+const CAMPOS =
+  'id, tenant_id, lead_id, nome, cpf_cnpj, telefone, email, empresa, data_nascimento, nps, health_score, ' +
+  'tipo_cliente, data_promovido_base, motivo_cancelamento, tentar_recuperar_em, plataforma_descarga_id, status, ' +
+  'criado_em, atualizado_em';
+const WRITABLE = [
+  'lead_id',
+  'nome',
+  'cpf_cnpj',
+  'telefone',
+  'email',
+  'empresa',
+  'data_nascimento',
+  'nps',
+  'health_score',
+  'tipo_cliente',
+  'data_promovido_base',
+  'motivo_cancelamento',
+  'tentar_recuperar_em',
+  'plataforma_descarga_id',
+  'status',
+];
 
 function pickWritable(payload) {
   const out = {};
@@ -51,4 +70,17 @@ async function update(tenantId, id, patch) {
   return data;
 }
 
-module.exports = { create, findById, findByLead, list, update };
+// Clientes prontos para a esteira de retomada de contato (job de recuperação).
+async function listParaRetomada(tenantId) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from('carteira_clientes')
+    .select(CAMPOS)
+    .eq('tenant_id', tenantId)
+    .not('tentar_recuperar_em', 'is', null)
+    .lte('tentar_recuperar_em', hoje);
+  if (error) throw error;
+  return data || [];
+}
+
+module.exports = { create, findById, findByLead, list, update, listParaRetomada };
