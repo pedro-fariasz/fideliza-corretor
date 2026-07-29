@@ -9,6 +9,7 @@ const tenantsRepository = require('../repositories/tenantsRepository');
 const carteiraService = require('../services/carteiraService');
 const posvendasService = require('../services/posvendasService');
 const biCarteiraService = require('../services/biCarteiraService');
+const notificacoesGeradorService = require('../services/notificacoesGeradorService');
 
 const router = express.Router();
 
@@ -81,6 +82,70 @@ router.post('/retomada-contato', requireJobSecret, async (req, res) => {
     return res.json({ processados: total, tenants: tenantIds.length, erros });
   } catch (err) {
     console.error('[job.retomada-contato] falhou', { error: err.message });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Gera avisos de aniversário do dia (roda diariamente às 6h). Idempotente: a
+// UNIQUE (tenant, tipo, cliente, dia) em notificacoes_corretor barra duplicata.
+router.post('/gerar-notificacoes-aniversario', requireJobSecret, async (req, res) => {
+  try {
+    const tenantIds = await tenantsRepository.listCorretorIds();
+    let total = 0;
+    const erros = [];
+    for (const tenantId of tenantIds) {
+      try {
+        const r = await notificacoesGeradorService.gerarAniversario(tenantId);
+        total += r.criadas;
+      } catch (e) {
+        erros.push({ tenant_id: tenantId, error: e.message });
+      }
+    }
+    return res.json({ criadas: total, tenants: tenantIds.length, erros });
+  } catch (err) {
+    console.error('[job.gerar-notificacoes-aniversario] falhou', { error: err.message });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Gera avisos de boleto a vencer em 3 dias (roda diariamente às 6h). Idempotente.
+router.post('/gerar-notificacoes-boleto', requireJobSecret, async (req, res) => {
+  try {
+    const tenantIds = await tenantsRepository.listCorretorIds();
+    let total = 0;
+    const erros = [];
+    for (const tenantId of tenantIds) {
+      try {
+        const r = await notificacoesGeradorService.gerarBoleto(tenantId);
+        total += r.criadas;
+      } catch (e) {
+        erros.push({ tenant_id: tenantId, error: e.message });
+      }
+    }
+    return res.json({ criadas: total, tenants: tenantIds.length, erros });
+  } catch (err) {
+    console.error('[job.gerar-notificacoes-boleto] falhou', { error: err.message });
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Gera avisos de follow-up de 7 dias pós-venda (roda diariamente às 6h). Idempotente.
+router.post('/gerar-notificacoes-follow-up', requireJobSecret, async (req, res) => {
+  try {
+    const tenantIds = await tenantsRepository.listCorretorIds();
+    let total = 0;
+    const erros = [];
+    for (const tenantId of tenantIds) {
+      try {
+        const r = await notificacoesGeradorService.gerarFollowUp(tenantId);
+        total += r.criadas;
+      } catch (e) {
+        erros.push({ tenant_id: tenantId, error: e.message });
+      }
+    }
+    return res.json({ criadas: total, tenants: tenantIds.length, erros });
+  } catch (err) {
+    console.error('[job.gerar-notificacoes-follow-up] falhou', { error: err.message });
     return res.status(500).json({ error: err.message });
   }
 });

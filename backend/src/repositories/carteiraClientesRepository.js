@@ -3,7 +3,7 @@ const { supabase } = require('../config/supabase');
 const CAMPOS =
   'id, tenant_id, lead_id, nome, cpf_cnpj, telefone, email, empresa, data_nascimento, nps, health_score, ' +
   'tipo_cliente, data_promovido_base, motivo_cancelamento, tentar_recuperar_em, plataforma_descarga_id, status, ' +
-  'criado_em, atualizado_em';
+  'operadora, vencimento_boleto, criado_em, atualizado_em';
 const WRITABLE = [
   'lead_id',
   'nome',
@@ -20,6 +20,8 @@ const WRITABLE = [
   'tentar_recuperar_em',
   'plataforma_descarga_id',
   'status',
+  'operadora',
+  'vencimento_boleto',
 ];
 
 function pickWritable(payload) {
@@ -83,4 +85,57 @@ async function listParaRetomada(tenantId) {
   return data || [];
 }
 
-module.exports = { create, findById, findByLead, list, update, listParaRetomada };
+// Candidatos ao aviso de aniversário: ativos, com telefone e data de nascimento.
+// O match exato de dia/mês (incl. regra de 29/fev) é feito em app-layer.
+async function listAniversariantes(tenantId) {
+  const { data, error } = await supabase
+    .from('carteira_clientes')
+    .select(CAMPOS)
+    .eq('tenant_id', tenantId)
+    .eq('status', 'ativo')
+    .not('telefone', 'is', null)
+    .not('data_nascimento', 'is', null);
+  if (error) throw error;
+  return data || [];
+}
+
+// Candidatos ao aviso de boleto: ativos, com telefone e dia de vencimento
+// configurado. O match "vence em 3 dias" é feito em app-layer.
+async function listComBoletoConfigurado(tenantId) {
+  const { data, error } = await supabase
+    .from('carteira_clientes')
+    .select(CAMPOS)
+    .eq('tenant_id', tenantId)
+    .eq('status', 'ativo')
+    .not('telefone', 'is', null)
+    .not('vencimento_boleto', 'is', null);
+  if (error) throw error;
+  return data || [];
+}
+
+// Clientes "novos" (ainda não promovidos a base) criados dentro de [deISO, ateISO)
+// — usado pelo follow-up de 7 dias.
+async function listNovosCriadosEntre(tenantId, deISO, ateISO) {
+  const { data, error } = await supabase
+    .from('carteira_clientes')
+    .select(CAMPOS)
+    .eq('tenant_id', tenantId)
+    .eq('tipo_cliente', 'novo')
+    .is('data_promovido_base', null)
+    .gte('criado_em', deISO)
+    .lt('criado_em', ateISO);
+  if (error) throw error;
+  return data || [];
+}
+
+module.exports = {
+  create,
+  findById,
+  findByLead,
+  list,
+  update,
+  listParaRetomada,
+  listAniversariantes,
+  listComBoletoConfigurado,
+  listNovosCriadosEntre,
+};

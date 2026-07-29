@@ -16,6 +16,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const agendaRoutes = require('./routes/agenda');
 const equipeRoutes = require('./routes/equipe');
 const carteiraRoutes = require('./routes/carteira');
+const notificacoesRoutes = require('./routes/notificacoes');
 const posvendasRoutes = require('./routes/posvendas');
 const biCarteiraRoutes = require('./routes/biCarteira');
 const desempenhoRoutes = require('./routes/desempenho');
@@ -61,6 +62,9 @@ function createApp() {
   app.use('/api/dashboard', requireAtivo, requirePermissao('dashboard_financeiro', 'ler'), dashboardRoutes);
   app.use('/api/agenda', requireAtivo, requirePermissao('agenda', 'ler'), agendaRoutes);
   app.use('/api/equipe', requireAtivo, equipeRoutes); // gate por 'usuarios' dentro do router
+  // Central de avisos pra corretora: sempre ligada, sem feature flag — agrega
+  // várias fontes (cron + esteira de pós-venda) e a usuária final sempre vê.
+  app.use('/api/notificacoes', requireAtivo, notificacoesRoutes);
   // Carteira (Fase 1): gated por feature flag + permissão 'carteira' (leitura).
   app.use(
     '/api/carteira',
