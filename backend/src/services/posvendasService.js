@@ -14,9 +14,11 @@ const produtosRepository = require('../repositories/produtosRepository');
 const usersRepository = require('../repositories/usersRepository');
 const interacoesRepository = require('../repositories/interacoesRepository');
 const statusRepo = require('../repositories/posvendasStatusRepository');
+const mensagensRepo = require('../repositories/posvendasMensagensRepository');
 const configService = require('./posvendasConfigService');
 const engine = require('./posvendasEngine');
 const defaults = require('../config/posvendasDefaults');
+const notificacaoService = require('./notificacaoService');
 const { resolverDonoIds, donoPermitido } = require('./escopoService');
 
 const hoje = () => new Date().toISOString().slice(0, 10);
@@ -146,6 +148,62 @@ async function listar(tenantId, filtros, usuario) {
   return ativas.map((a) => montarCard(a, ctx, h));
 }
 
+// Notificação pra corretora quando a apólice entra numa nova etapa da esteira.
+// Usa o template de posvendas_mensagens (categoria x etapa) — sem template
+// cadastrado, não cria nada (evita notificação vazia) e só loga. Não-fatal:
+// quem chama nunca deixa isso derrubar o recálculo da etapa em si.
+async function gerarNotificacaoEsteira(tenantId, apolice, cliente, produto, categoria, etapa, statusRow) {
+  try {
+    const msg = await mensagensRepo.find(tenantId, categoria, etapa.chave);
+    if (!msg || !msg.texto) {
+      console.log('[posvendas.recalcular] sem template de mensagem — notificação não criada', {
+        tenant_id: tenantId, apolice_id: apolice.id, categoria, etapa_chave: etapa.chave,
+      });
+      return;
+    }
+
+    let destinatarioId = apolice.corretor_id;
+    if (!destinatarioId) {
+      const dono = await usersRepository.findCorretorDoTenant(tenantId);
+      destinatarioId = dono ? dono.id : null;
+    }
+    if (!destinatarioId) return; // ninguém pra notificar
+
+    let corretorNome = '';
+    try {
+      const u = await usersRepository.findByIdInTenant(tenantId, destinatarioId);
+      corretorNome = (u && (u.nome || u.email)) || '';
+    } catch { /* opcional */ }
+
+    // posvendas_mensagens usa a sintaxe [VAR] (engine.renderTemplate), não a
+    // {var} do notificacaoService — renderiza aqui e passa o texto já pronto.
+    const textoRenderizado = engine.renderTemplate(msg.texto, {
+      NOME: cliente ? cliente.nome : '',
+      PRODUTO: produto ? produto.nome : '',
+      VENCIMENTO: formatData(apolice.data_vencimento),
+      VALOR: formatBRL(apolice.valor),
+      CORRETOR: corretorNome,
+    });
+
+    await notificacaoService.criarNotificacao({
+      tenant_id: tenantId,
+      destinatario_id: destinatarioId,
+      tipo: 'esteira_posvendas',
+      cliente,
+      apolice,
+      titulo: `${etapa.nome} — ${cliente ? cliente.nome : 'cliente'}`,
+      template: textoRenderizado,
+      agendada_para: new Date().toISOString(),
+      origem_tipo: 'esteira_posvendas',
+      origem_id: statusRow.id,
+    });
+  } catch (err) {
+    console.error('[posvendas.recalcular] falha ao gerar notificação da esteira (não-fatal)', {
+      tenant_id: tenantId, apolice_id: apolice.id, error: err.message,
+    });
+  }
+}
+
 // --- Job diário: recalcula a etapa e move as apólices ------------------------
 // Não-fatal por apólice: um erro isolado não derruba o lote.
 async function recalcularEtapas(tenantId) {
@@ -169,8 +227,10 @@ async function recalcularEtapas(tenantId) {
     const status = ctx.statusMap[a.id];
     if (status && status.etapa_id === etapa.id) continue; // já está nesta etapa
 
-    await statusRepo.create(tenantId, { apolice_id: a.id, etapa_id: etapa.id });
+    const statusRow = await statusRepo.create(tenantId, { apolice_id: a.id, etapa_id: etapa.id });
     movidas += 1;
+
+    await gerarNotificacaoEsteira(tenantId, a, cliente, ctx.produtoById[a.produto_id], conf.categoria, etapa, statusRow);
 
     // Movimentação automática vira interação (quando o cliente veio de um lead).
     if (cliente.lead_id) {
