@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Search,
-  LayoutGrid,
+  Columns3,
   List,
   Plus,
   Pencil,
@@ -11,11 +11,11 @@ import {
   ArrowDown,
   ArrowUpDown,
   UserPlus,
-  Megaphone,
   Filter,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 import LeadFormModal from '../../components/LeadFormModal';
 import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
@@ -25,18 +25,18 @@ import { formatBRL, formatData } from '../../utils/format';
 const INTERESSE_LABEL = INTERESSES.reduce((a, i) => ((a[i.value] = i.label), a), {});
 const CARD = 'rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-white/5';
 const ESTAGIO_ORDEM = ESTAGIOS.map((e) => e.value);
+const VIEW_KEY = 'leads_view_mode';
 
 function proximoEstagio(estagio) {
   const i = ESTAGIO_ORDEM.indexOf(estagio);
   return i >= 0 && i < ESTAGIO_ORDEM.length - 1 ? ESTAGIO_ORDEM[i + 1] : null;
 }
-
 function abrirWhatsApp(telefone) {
   const num = (telefone || '').replace(/\D/g, '');
   window.open(num ? `https://wa.me/55${num}` : 'https://wa.me/', '_blank', 'noopener');
 }
 
-// Badge de estágio com tom por posição no funil (frio → quente).
+// Badge de estágio, tom por posição no funil (frio → quente).
 const ESTAGIO_TONE = {
   prospectos: 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300',
   qualificados: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
@@ -53,8 +53,30 @@ function EstagioBadge({ estagio }) {
   );
 }
 
+// Badge discreto de origem — cor tonal determinística a partir do texto.
+const ORIGEM_TONES = [
+  'bg-brand-blue/10 text-brand-blue',
+  'bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
+  'bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300',
+  'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
+  'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
+  'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-gray-300',
+];
+function OrigemBadge({ origem }) {
+  if (!origem) return <span className="text-xs text-gray-400">—</span>;
+  let h = 0;
+  for (let i = 0; i < origem.length; i += 1) h = (h * 31 + origem.charCodeAt(i)) >>> 0;
+  const tone = ORIGEM_TONES[h % ORIGEM_TONES.length];
+  return (
+    <span className={`inline-block max-w-[10rem] truncate rounded-md px-2 py-0.5 text-[11px] font-medium ${tone}`} title={origem}>
+      {origem}
+    </span>
+  );
+}
+
 export default function LeadsPage() {
   const { profile } = useAuth();
+  const { push } = useToast();
   const verValores = !profile || profile.pode_ver_valores !== false;
 
   const [leads, setLeads] = useState([]);
@@ -64,11 +86,15 @@ export default function LeadsPage() {
   const [busca, setBusca] = useState('');
   const [estagio, setEstagio] = useState('');
   const [origem, setOrigem] = useState('');
-  const [view, setView] = useState('tabela'); // 'tabela' | 'cards'
+  const [view, setView] = useState(() => localStorage.getItem(VIEW_KEY) || 'lista');
   const [sort, setSort] = useState({ key: 'criado_em', dir: 'desc' });
 
   const [aberto, setAberto] = useState(false);
   const [editLead, setEditLead] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem(VIEW_KEY, view);
+  }, [view]);
 
   async function carregar() {
     setLoading(true);
@@ -86,20 +112,17 @@ export default function LeadsPage() {
     carregar();
   }, []);
 
-  // Contagem por estágio (sobre todos os leads ativos, independente do filtro).
   const contagem = useMemo(() => {
     const c = {};
     for (const l of leads) c[l.estagio] = (c[l.estagio] || 0) + 1;
     return c;
   }, [leads]);
 
-  // Origens distintas presentes (para o filtro).
   const origens = useMemo(
     () => [...new Set(leads.map((l) => l.origem_especifica).filter(Boolean))].sort(),
     [leads]
   );
 
-  // Filtro + ordenação (tudo client-side, busca instantânea).
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     let arr = leads.filter((l) => {
@@ -116,7 +139,6 @@ export default function LeadsPage() {
     arr = [...arr].sort((a, b) => {
       if (key === 'valor_estimado') return (Number(a.valor_estimado || 0) - Number(b.valor_estimado || 0)) * mult;
       if (key === 'nome') return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR') * mult;
-      // criado_em
       return String(a.criado_em || '').localeCompare(String(b.criado_em || '')) * mult;
     });
     return arr;
@@ -126,14 +148,16 @@ export default function LeadsPage() {
     setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'nome' ? 'asc' : 'desc' }));
   }
 
-  async function avancar(lead) {
-    const prox = proximoEstagio(lead.estagio);
-    if (!prox) return;
+  async function moverEstagio(lead, novoEstagio) {
+    if (!novoEstagio || lead.estagio === novoEstagio) return;
+    const anterior = lead.estagio;
+    setLeads((ls) => ls.map((l) => (l.id === lead.id ? { ...l, estagio: novoEstagio } : l))); // otimista
     try {
-      await api.mudarEstagio(lead.id, prox);
-      await carregar();
+      await api.mudarEstagio(lead.id, novoEstagio);
+      push({ tipo: 'sucesso', texto: `${lead.nome} → ${ESTAGIO_LABEL[novoEstagio]}` });
     } catch (err) {
-      alert(err.message || 'Erro ao mover o lead.');
+      setLeads((ls) => ls.map((l) => (l.id === lead.id ? { ...l, estagio: anterior } : l))); // rollback
+      push({ tipo: 'erro', texto: err.message || 'Não foi possível mover o lead.' });
     }
   }
 
@@ -182,30 +206,10 @@ export default function LeadsPage() {
           </div>
         )}
 
-        {/* Toggle de visualização */}
-        <div className="ml-auto inline-flex rounded-lg border border-gray-200 p-0.5 dark:border-white/10">
-          <button
-            type="button"
-            onClick={() => setView('tabela')}
-            aria-label="Ver em tabela"
-            aria-pressed={view === 'tabela'}
-            className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-              view === 'tabela' ? 'bg-brand-blue/10 text-brand-blue' : 'text-gray-400 hover:text-brand-navy dark:hover:text-white'
-            }`}
-          >
-            <List size={17} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setView('cards')}
-            aria-label="Ver em cards"
-            aria-pressed={view === 'cards'}
-            className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-              view === 'cards' ? 'bg-brand-blue/10 text-brand-blue' : 'text-gray-400 hover:text-brand-navy dark:hover:text-white'
-            }`}
-          >
-            <LayoutGrid size={16} />
-          </button>
+        {/* Toggle Kanban / Lista (persistido em localStorage) */}
+        <div className="ml-auto inline-flex rounded-lg border border-gray-200 p-0.5 dark:border-white/10" role="tablist" aria-label="Visualização">
+          <ViewBtn active={view === 'kanban'} onClick={() => setView('kanban')} label="Kanban" icon={Columns3} />
+          <ViewBtn active={view === 'lista'} onClick={() => setView('lista')} label="Lista" icon={List} />
         </div>
 
         <button
@@ -235,40 +239,48 @@ export default function LeadsPage() {
 
       {/* Conteúdo */}
       {loading ? (
-        <LeadsSkeleton />
+        <LeadsSkeleton view={view} />
       ) : error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
           {error}
         </div>
       ) : semNenhum ? (
-        <VazioLeads onNovo={novo} />
-      ) : filtrados.length === 0 ? (
         <div className={`${CARD} p-8`}>
           <EmptyState
-            icon={Search}
-            title="Nenhum lead com esses filtros"
-            description="Ajuste a busca, o estágio ou a origem para ver mais resultados."
+            icon={UserPlus}
+            title="Sua jornada de vendas começa aqui"
+            description="Cadastre seu primeiro lead para movimentar o funil."
           />
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={novo}
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition-all hover:bg-brand-blue-dark"
+            >
+              <Plus size={17} /> Novo lead
+            </button>
+          </div>
         </div>
-      ) : view === 'tabela' ? (
+      ) : filtrados.length === 0 ? (
+        <div className={`${CARD} p-8`}>
+          <EmptyState icon={Search} title="Nenhum lead com esses filtros" description="Ajuste a busca, o estágio ou a origem." />
+        </div>
+      ) : view === 'kanban' ? (
+        <KanbanLeads
+          leads={filtrados}
+          verValores={verValores}
+          onEditar={editar}
+          onMover={moverEstagio}
+        />
+      ) : (
         <>
-          {/* Tabela no desktop; em telas estreitas cai para cards (mais legível). */}
           <div className="hidden md:block">
-            <TabelaLeads
-              leads={filtrados}
-              verValores={verValores}
-              sort={sort}
-              onSort={toggleSort}
-              onEditar={editar}
-              onAvancar={avancar}
-            />
+            <TabelaLeads leads={filtrados} verValores={verValores} sort={sort} onSort={toggleSort} onEditar={editar} onMover={moverEstagio} />
           </div>
           <div className="md:hidden">
-            <CardsLeads leads={filtrados} verValores={verValores} onEditar={editar} onAvancar={avancar} />
+            <CardsLeads leads={filtrados} verValores={verValores} onEditar={editar} onMover={moverEstagio} />
           </div>
         </>
-      ) : (
-        <CardsLeads leads={filtrados} verValores={verValores} onEditar={editar} onAvancar={avancar} />
       )}
 
       <LeadFormModal
@@ -281,6 +293,23 @@ export default function LeadsPage() {
         onSaved={() => carregar()}
       />
     </div>
+  );
+}
+
+function ViewBtn({ active, onClick, label, icon: Icon }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      role="tab"
+      aria-selected={active}
+      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors ${
+        active ? 'bg-brand-blue/10 text-brand-blue' : 'text-gray-400 hover:text-brand-navy dark:hover:text-white'
+      }`}
+    >
+      <Icon size={16} />
+      <span className="hidden sm:inline">{label}</span>
+    </button>
   );
 }
 
@@ -297,19 +326,14 @@ function StagePill({ label, count, active, onClick }) {
       }`}
     >
       {label}
-      <span
-        className={`rounded-full px-1.5 text-[11px] font-semibold ${
-          active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-300'
-        }`}
-      >
+      <span className={`rounded-full px-1.5 text-[11px] font-semibold ${active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-300'}`}>
         {count}
       </span>
     </button>
   );
 }
 
-// --- Ações rápidas (compartilhadas por tabela e cards) ------------------------
-function QuickActions({ lead, onEditar, onAvancar }) {
+function QuickActions({ lead, onEditar, onMover }) {
   const prox = proximoEstagio(lead.estagio);
   return (
     <div className="flex items-center gap-1">
@@ -322,7 +346,7 @@ function QuickActions({ lead, onEditar, onAvancar }) {
         <Pencil size={15} />
       </IconBtn>
       {prox && (
-        <IconBtn label={`Avançar para ${ESTAGIO_LABEL[prox]}`} onClick={() => onAvancar(lead)} tone="blue">
+        <IconBtn label={`Avançar para ${ESTAGIO_LABEL[prox]}`} onClick={() => onMover(lead, prox)} tone="blue">
           <ChevronRight size={16} />
         </IconBtn>
       )}
@@ -336,40 +360,98 @@ function IconBtn({ children, label, onClick, tone = 'gray' }) {
     emerald: 'text-gray-400 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-500/15 dark:hover:text-emerald-300',
   };
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${tones[tone]}`}
-    >
+    <button type="button" onClick={onClick} aria-label={label} title={label} className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${tones[tone]}`}>
       {children}
     </button>
   );
 }
 
-// --- Tabela -------------------------------------------------------------------
+// --- Kanban (colunas por estágio; arrastar para mover) ------------------------
+function KanbanLeads({ leads, verValores, onEditar, onMover }) {
+  const [arrastando, setArrastando] = useState(null);
+  const [alvo, setAlvo] = useState(null);
+  const porEstagio = (e) => leads.filter((l) => l.estagio === e);
+
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-2">
+      {ESTAGIOS.map((col) => {
+        const items = porEstagio(col.value);
+        return (
+          <div
+            key={col.value}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (alvo !== col.value) setAlvo(col.value);
+            }}
+            onDragLeave={() => setAlvo((a) => (a === col.value ? null : a))}
+            onDrop={() => {
+              if (arrastando) onMover(arrastando, col.value);
+              setArrastando(null);
+              setAlvo(null);
+            }}
+            className={`flex w-72 shrink-0 flex-col rounded-2xl border p-2 transition-colors ${
+              alvo === col.value ? 'border-brand-blue/50 bg-brand-blue/5' : 'border-gray-100 bg-gray-50/70 dark:border-white/10 dark:bg-white/5'
+            }`}
+          >
+            <div className="flex items-center justify-between px-2 py-2">
+              <span className="text-sm font-semibold text-brand-navy dark:text-white">{col.label}</span>
+              <span className="rounded-full bg-white px-2 text-xs font-medium text-gray-500 shadow-sm dark:bg-white/10 dark:text-gray-300">
+                {items.length}
+              </span>
+            </div>
+            <div className="flex min-h-[60px] flex-col gap-2">
+              {items.map((lead) => (
+                <div
+                  key={lead.id}
+                  draggable
+                  onDragStart={() => setArrastando(lead)}
+                  onDragEnd={() => {
+                    setArrastando(null);
+                    setAlvo(null);
+                  }}
+                  className={`${CARD} cursor-grab p-3 active:cursor-grabbing ${arrastando?.id === lead.id ? 'opacity-50' : ''}`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <Avatar nome={lead.nome} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-brand-navy dark:text-white">{lead.nome}</p>
+                      <p className="truncate text-xs text-gray-400">{INTERESSE_LABEL[lead.interesse] || '—'}</p>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <OrigemBadge origem={lead.origem_especifica} />
+                    {verValores && lead.valor_estimado ? (
+                      <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">{formatBRL(lead.valor_estimado)}</span>
+                    ) : null}
+                  </div>
+                  <div className="mt-2 flex items-center justify-end border-t border-gray-100 pt-2 dark:border-white/5">
+                    <QuickActions lead={lead} onEditar={onEditar} onMover={onMover} />
+                  </div>
+                </div>
+              ))}
+              {items.length === 0 && <p className="px-2 py-6 text-center text-xs text-gray-300 dark:text-gray-600">Vazio</p>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// --- Lista (tabela; cai para cards no mobile) --------------------------------
 function SortHead({ label, k, sort, onSort, className = '' }) {
   const active = sort.key === k;
   return (
     <th className={`px-4 py-3 ${className}`}>
-      <button
-        type="button"
-        onClick={() => onSort(k)}
-        className={`inline-flex items-center gap-1 transition-colors hover:text-brand-navy dark:hover:text-white ${active ? 'text-brand-navy dark:text-white' : ''}`}
-      >
+      <button type="button" onClick={() => onSort(k)} className={`inline-flex items-center gap-1 transition-colors hover:text-brand-navy dark:hover:text-white ${active ? 'text-brand-navy dark:text-white' : ''}`}>
         {label}
-        {active ? (
-          sort.dir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
-        ) : (
-          <ArrowUpDown size={12} className="opacity-40" />
-        )}
+        {active ? sort.dir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} /> : <ArrowUpDown size={12} className="opacity-40" />}
       </button>
     </th>
   );
 }
 
-function TabelaLeads({ leads, verValores, sort, onSort, onEditar, onAvancar }) {
+function TabelaLeads({ leads, verValores, sort, onSort, onEditar, onMover }) {
   return (
     <div className={`${CARD} overflow-hidden`}>
       <div className="overflow-x-auto">
@@ -381,8 +463,8 @@ function TabelaLeads({ leads, verValores, sort, onSort, onEditar, onAvancar }) {
               <th className="hidden px-4 py-3 2xl:table-cell">Interesse</th>
               <th className="px-4 py-3">Estágio</th>
               {verValores && <SortHead label="Valor est." k="valor_estimado" sort={sort} onSort={onSort} />}
-              <th className="hidden px-4 py-3 2xl:table-cell">Origem</th>
-              <SortHead label="Cadastro" k="criado_em" sort={sort} onSort={onSort} className="hidden xl:table-cell" />
+              <th className="px-4 py-3">Origem</th>
+              <SortHead label="Cadastro" k="criado_em" sort={sort} onSort={onSort} className="hidden 2xl:table-cell" />
               <th className="px-4 py-3 text-right">Ações</th>
             </tr>
           </thead>
@@ -404,15 +486,15 @@ function TabelaLeads({ leads, verValores, sort, onSort, onEditar, onAvancar }) {
                   <EstagioBadge estagio={l.estagio} />
                 </td>
                 {verValores && (
-                  <td className="whitespace-nowrap px-4 py-3 tabular-nums text-gray-600 dark:text-gray-300">
-                    {l.valor_estimado ? formatBRL(l.valor_estimado) : '—'}
-                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 tabular-nums text-gray-600 dark:text-gray-300">{l.valor_estimado ? formatBRL(l.valor_estimado) : '—'}</td>
                 )}
-                <td className="hidden whitespace-nowrap px-4 py-3 text-gray-400 2xl:table-cell">{l.origem_especifica || '—'}</td>
-                <td className="hidden whitespace-nowrap px-4 py-3 text-gray-400 xl:table-cell">{formatData(l.criado_em)}</td>
+                <td className="px-4 py-3">
+                  <OrigemBadge origem={l.origem_especifica} />
+                </td>
+                <td className="hidden whitespace-nowrap px-4 py-3 text-gray-400 2xl:table-cell">{formatData(l.criado_em)}</td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end">
-                    <QuickActions lead={l} onEditar={onEditar} onAvancar={onAvancar} />
+                    <QuickActions lead={l} onEditar={onEditar} onMover={onMover} />
                   </div>
                 </td>
               </tr>
@@ -424,48 +506,27 @@ function TabelaLeads({ leads, verValores, sort, onSort, onEditar, onAvancar }) {
   );
 }
 
-// --- Cards --------------------------------------------------------------------
-function CardsLeads({ leads, verValores, onEditar, onAvancar }) {
+function CardsLeads({ leads, verValores, onEditar, onMover }) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {leads.map((l) => (
-        <div key={l.id} className={`${CARD} p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}>
+        <div key={l.id} className={`${CARD} p-4`}>
           <div className="flex items-start gap-3">
             <Avatar nome={l.nome} size="lg" />
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-brand-navy dark:text-white">{l.nome}</p>
-              <p className="truncate text-xs text-gray-400">
-                {INTERESSE_LABEL[l.interesse] || l.origem_especifica || 'Lead'}
-              </p>
+              <p className="truncate text-xs text-gray-400">{INTERESSE_LABEL[l.interesse] || '—'}</p>
             </div>
             <EstagioBadge estagio={l.estagio} />
           </div>
-
-          <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-            <div>
-              <dt className="text-gray-400">Contato</dt>
-              <dd className="truncate text-gray-600 dark:text-gray-300">{l.telefone || l.email || '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-400">Origem</dt>
-              <dd className="truncate text-gray-600 dark:text-gray-300">{l.origem_especifica || '—'}</dd>
-            </div>
-            {verValores && (
-              <div>
-                <dt className="text-gray-400">Valor est.</dt>
-                <dd className="font-medium text-gray-700 dark:text-gray-200">
-                  {l.valor_estimado ? formatBRL(l.valor_estimado) : '—'}
-                </dd>
-              </div>
-            )}
-            <div>
-              <dt className="text-gray-400">Cadastro</dt>
-              <dd className="text-gray-600 dark:text-gray-300">{formatData(l.criado_em)}</dd>
-            </div>
-          </dl>
-
-          <div className="mt-3 flex items-center justify-end border-t border-gray-100 pt-3 dark:border-white/5">
-            <QuickActions lead={l} onEditar={onEditar} onAvancar={onAvancar} />
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <OrigemBadge origem={l.origem_especifica} />
+            <span>{l.telefone || l.email || '—'}</span>
+            {verValores && l.valor_estimado ? <span className="font-medium text-gray-700 dark:text-gray-200">{formatBRL(l.valor_estimado)}</span> : null}
+          </div>
+          <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-white/5">
+            <span className="text-xs text-gray-400">{formatData(l.criado_em)}</span>
+            <QuickActions lead={l} onEditar={onEditar} onMover={onMover} />
           </div>
         </div>
       ))}
@@ -473,50 +534,22 @@ function CardsLeads({ leads, verValores, onEditar, onAvancar }) {
   );
 }
 
-// --- Estado vazio -------------------------------------------------------------
-function VazioLeads({ onNovo }) {
-  const dicas = [
-    'Cadastre pelo botão "Novo lead" ou importe a proposta em PDF na Carteira.',
-    'Organize por estágio e nunca perca o próximo passo de cada contato.',
-    'Leads viram vendas no funil — e a comissão é calculada automaticamente.',
-  ];
-  return (
-    <div className={`${CARD} p-8`}>
-      <div className="flex flex-col items-center text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-blue/10 text-brand-blue">
-          <Megaphone size={26} />
-        </span>
-        <h3 className="mt-4 font-heading text-lg font-semibold text-brand-navy dark:text-white">
-          Sua jornada de vendas começa aqui
-        </h3>
-        <p className="mt-1.5 max-w-md text-sm text-gray-500 dark:text-gray-400">
-          Cadastre seu primeiro lead e veja seu funil crescer. Cada contato organizado é uma venda
-          mais perto de acontecer.
-        </p>
-        <button
-          type="button"
-          onClick={onNovo}
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition-all hover:bg-brand-blue-dark"
-        >
-          <UserPlus size={17} /> Cadastrar primeiro lead
-        </button>
-      </div>
-      <ul className="mx-auto mt-8 grid max-w-2xl gap-2.5 sm:grid-cols-3">
-        {dicas.map((d, i) => (
-          <li
-            key={i}
-            className="rounded-xl border border-gray-100 bg-gray-50/60 p-3 text-xs leading-relaxed text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-400"
-          >
-            {d}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 // --- Skeleton -----------------------------------------------------------------
-function LeadsSkeleton() {
+function LeadsSkeleton({ view }) {
+  if (view === 'kanban') {
+    return (
+      <div className="flex gap-3 overflow-hidden">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="w-72 shrink-0 rounded-2xl border border-gray-100 bg-gray-50/70 p-2 dark:border-white/10 dark:bg-white/5">
+            <div className="shimmer m-2 h-4 w-24 rounded bg-gray-100 dark:bg-white/10" />
+            {Array.from({ length: 3 }).map((_, j) => (
+              <div key={j} className="shimmer mb-2 h-20 rounded-xl bg-gray-100 dark:bg-white/10" />
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className={`${CARD} overflow-hidden`}>
       <div className="space-y-3 p-4">

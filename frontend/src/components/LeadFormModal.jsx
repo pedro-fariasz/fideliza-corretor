@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { useToast } from '../hooks/useToast';
 import Modal from './Modal';
 import FormField from './FormField';
 import { INTERESSES, ORIGENS, ESTAGIOS } from '../utils/crmConstants';
+
+const emailValido = (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 const VAZIO = {
   nome: '',
@@ -19,9 +22,15 @@ const VAZIO = {
 
 // Modal de criação/edição de lead. onSaved recebe o lead salvo.
 export default function LeadFormModal({ open, onClose, onSaved, lead = null, estagioInicial }) {
+  const { push } = useToast();
   const [form, setForm] = useState(VAZIO);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
+
+  // Validação em tempo real (campos mínimos).
+  const nomeOk = form.nome.trim().length >= 2;
+  const emailOk = emailValido(form.email);
+  const podeSalvar = nomeOk && emailOk && !salvando;
 
   useEffect(() => {
     if (!open) return;
@@ -70,10 +79,13 @@ export default function LeadFormModal({ open, onClose, onSaved, lead = null, est
       } else {
         salvo = await api.criarLead({ ...payload, estagio: form.estagio });
       }
+      push({ tipo: 'sucesso', texto: lead ? 'Lead atualizado.' : 'Lead cadastrado com sucesso.' });
       onSaved(salvo);
       onClose();
     } catch (err) {
-      setErro(err.message || 'Erro ao salvar o lead.');
+      const msg = err.message || 'Erro ao salvar o lead.';
+      setErro(msg);
+      push({ tipo: 'erro', texto: msg });
     } finally {
       setSalvando(false);
     }
@@ -96,8 +108,8 @@ export default function LeadFormModal({ open, onClose, onSaved, lead = null, est
           <button
             type="button"
             onClick={salvar}
-            disabled={salvando}
-            className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-60"
+            disabled={!podeSalvar}
+            className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
           >
             {salvando ? 'Salvando...' : 'Salvar'}
           </button>
@@ -121,7 +133,10 @@ export default function LeadFormModal({ open, onClose, onSaved, lead = null, est
         )}
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Telefone" name="telefone" value={form.telefone} onChange={onChange} placeholder="(11) 99999-9999" />
-          <FormField label="E-mail" name="email" type="email" value={form.email} onChange={onChange} />
+          <div>
+            <FormField label="E-mail" name="email" type="email" value={form.email} onChange={onChange} />
+            {!emailOk && <p className="mt-1 text-xs text-red-600">E-mail inválido.</p>}
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Interesse" name="interesse" value={form.interesse} onChange={onChange} options={INTERESSES} />

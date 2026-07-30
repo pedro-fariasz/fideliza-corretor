@@ -13,6 +13,7 @@ import {
   CalendarClock,
   ArrowRight,
   Sparkles,
+  Target,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { formatBRL } from '../../utils/format';
@@ -26,12 +27,11 @@ import EmptyState from '../../components/EmptyState';
 // agora com tooltips no hover, donut, eixos e legendas. Redesign visual.
 // =============================================================================
 
+// Período (pill control). '12m' mapeia para o valor '1a' do backend.
 const PERIODOS = [
-  { value: '30d', label: '30 dias' },
-  { value: '90d', label: '90 dias' },
-  { value: '6m', label: '6 meses' },
-  { value: '1a', label: '1 ano' },
-  { value: 'tudo', label: 'Tudo' },
+  { value: '30d', label: '30d' },
+  { value: '90d', label: '90d' },
+  { value: '1a', label: '12m' },
 ];
 
 const ESCOPOS = [
@@ -72,6 +72,7 @@ export default function InteligenciaPage() {
   const [corretorId, setCorretorId] = useState('');
   const [corretores, setCorretores] = useState([]);
   const [dados, setDados] = useState(null);
+  const [conversao, setConversao] = useState(null); // % leads→vendas (de /api/desempenho)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -93,6 +94,24 @@ export default function InteligenciaPage() {
       setLoading(false);
     }
   }
+
+  // Conversão (leads→vendas) vem do módulo de Desempenho — respeita o período.
+  useEffect(() => {
+    let vivo = true;
+    api
+      .desempenho({ periodo })
+      .then((d) => {
+        if (!vivo) return;
+        const vs = Array.isArray(d?.vendedores) ? d.vendedores : [];
+        if (vs.length === 0) return setConversao(null);
+        const media = vs.reduce((s, v) => s + Number(v.taxa_conversao || 0), 0) / vs.length;
+        setConversao(Math.round(media * 10) / 10);
+      })
+      .catch(() => vivo && setConversao(null));
+    return () => {
+      vivo = false;
+    };
+  }, [periodo, escopo, corretorId]);
   useEffect(() => {
     carregar(); /* eslint-disable-next-line */
   }, [periodo, escopo, corretorId]);
@@ -181,7 +200,9 @@ export default function InteligenciaPage() {
       )}
 
       {!loading && !error && vazio && <VazioInteligencia navigate={navigate} />}
-      {!loading && !error && dados && !vazio && <Painel dados={dados} onCta={irParaCta} />}
+      {!loading && !error && dados && !vazio && (
+        <Painel dados={dados} conversao={conversao} onCta={irParaCta} navigate={navigate} />
+      )}
     </div>
   );
 }
@@ -256,25 +277,70 @@ function Kpi({ icon: Icon, tone = 'blue', label, value, valueCls }) {
   );
 }
 
-function Painel({ dados, onCta }) {
+// Card de KPI principal (top bar). Clicável quando recebe onClick.
+function HeroKpi({ icon: Icon, tone = 'blue', label, value, valueCls, hint, onClick }) {
+  const clickable = typeof onClick === 'function';
+  const Tag = clickable ? 'button' : 'div';
+  return (
+    <Tag
+      type={clickable ? 'button' : undefined}
+      onClick={onClick}
+      className={`${CARD} p-5 text-left ${clickable ? 'group transition-all hover:-translate-y-0.5 hover:shadow-md' : ''}`}
+    >
+      <div className="flex items-center justify-between">
+        <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${KPI_TONES[tone]}`}>
+          <Icon size={20} aria-hidden="true" />
+        </span>
+        {clickable && <ArrowRight size={15} className="text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-blue" />}
+      </div>
+      <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">{label}</p>
+      <p className={`mt-1 font-heading text-[1.7rem] font-bold leading-none ${valueCls || 'text-brand-navy dark:text-white'}`}>{value}</p>
+      {hint && <p className="mt-1.5 text-xs text-gray-400">{hint}</p>}
+    </Tag>
+  );
+}
+
+function Painel({ dados, conversao, onCta, navigate }) {
   const c = dados.cards;
-  const kpis = [
-    { icon: ShieldCheck, tone: 'emerald', label: 'Score de saúde', value: c.score_saude == null ? '—' : c.score_saude, valueCls: faixaTone[c.faixa] },
-    { icon: DollarSign, tone: 'blue', label: 'Receita garantida', value: formatBRL(c.receita_garantida) },
+  // Cor da Saúde Geral por faixa (verde/âmbar/vermelho).
+  const saudeTone = c.faixa === 'verde' ? 'emerald' : c.faixa === 'vermelho' ? 'red' : c.faixa === 'amarelo' ? 'amber' : 'blue';
+
+  const secundarios = [
     { icon: AlertTriangle, tone: 'red', label: 'Receita em risco', value: formatBRL(c.receita_risco), valueCls: 'text-red-600 dark:text-red-400' },
     { icon: RefreshCw, tone: 'blue', label: 'Taxa de renovação', value: c.taxa_renovacao == null ? '—' : `${c.taxa_renovacao}%` },
     { icon: Star, tone: 'amber', label: 'NPS', value: c.nps == null ? '—' : c.nps },
     { icon: TrendingUp, tone: 'violet', label: 'LTV médio', value: formatBRL(c.ltv_medio) },
     { icon: Package, tone: 'blue', label: 'Produtos/cliente', value: c.produtos_por_cliente == null ? '—' : c.produtos_por_cliente },
-    { icon: XCircle, tone: 'red', label: 'Cancelamento', value: c.taxa_cancelamento == null ? '—' : `${c.taxa_cancelamento}%` },
     { icon: CalendarClock, tone: 'amber', label: 'Vencem em 30d', value: c.vencimentos_30d },
   ];
 
   return (
     <div className="space-y-6">
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {kpis.map((k) => (
+      {/* KPIs principais — top bar (empilha < 768px) */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <HeroKpi
+          icon={ShieldCheck}
+          tone={saudeTone}
+          label="Saúde geral"
+          value={c.score_saude == null ? '—' : c.score_saude}
+          valueCls={faixaTone[c.faixa]}
+          hint="Score médio da carteira"
+        />
+        <HeroKpi icon={DollarSign} tone="blue" label="Receita garantida" value={formatBRL(c.receita_garantida)} hint="Apólices vigentes" />
+        <HeroKpi
+          icon={XCircle}
+          tone="red"
+          label="Taxa de churn"
+          value={c.taxa_cancelamento == null ? '—' : `${c.taxa_cancelamento}%`}
+          hint="Cancelamentos no período"
+          onClick={() => navigate('/carteira')}
+        />
+        <HeroKpi icon={Target} tone="violet" label="Conversão" value={conversao == null ? '—' : `${conversao}%`} hint="Leads que viraram vendas" />
+      </div>
+
+      {/* Métricas secundárias */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {secundarios.map((k) => (
           <Kpi key={k.label} {...k} />
         ))}
       </div>
