@@ -462,31 +462,128 @@ function Painel({ dados, conversao, onCta, navigate }) {
         )}
       </section>
 
-      {/* Cross-sell */}
-      <section id="bloco-crosssell" className={`${CARD} p-5`}>
-        <CardHead title="Oportunidades de cross-sell" />
-        {!dados.crosssell || dados.crosssell.length === 0 ? (
-          <p className="text-sm text-gray-400">Sem oportunidades no escopo atual.</p>
-        ) : (
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {dados.crosssell.map((o) => (
-              <li
-                key={o.cliente_id}
-                className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-2.5 text-sm dark:border-white/10 dark:bg-white/5"
-              >
-                <span className="flex items-center gap-2.5">
-                  <Avatar nome={o.cliente_nome} size="sm" />
-                  <span className="font-medium text-brand-navy dark:text-white">{o.cliente_nome}</span>
-                </span>
-                <span className="shrink-0 text-xs text-gray-400">
-                  {o.faltam} produto(s) · potencial {o.score}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* Quadrante inferior: atividades (esquerda) + cross-sell (direita) */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <LogAtividades />
+
+        <section id="bloco-crosssell" className={`${CARD} p-5`}>
+          <CardHead title="Oportunidades de cross-sell" />
+          {!dados.crosssell || dados.crosssell.length === 0 ? (
+            <p className="text-sm text-gray-400">Sem oportunidades no escopo atual.</p>
+          ) : (
+            <ul className="space-y-2">
+              {dados.crosssell.map((o) => (
+                <li
+                  key={o.cliente_id}
+                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Avatar nome={o.cliente_nome} size="sm" />
+                    <span className="font-medium text-brand-navy dark:text-white">{o.cliente_nome}</span>
+                  </span>
+                  <span className="shrink-0 text-xs text-gray-400">
+                    {o.faltam} produto(s) · potencial {o.score}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
+  );
+}
+
+// --- Feed de atividades (GET /api/atividades) --------------------------------
+const ACOES_PT = {
+  promovido_de_lead: 'promoveu lead a cliente',
+  cliente_cancelado_recuperavel: 'cancelou cliente (recuperável)',
+  cliente_virou_lead_frio: 'moveu cliente pro funil como risco',
+  cliente_falecimento: 'encerrou cliente por falecimento',
+  notificacao_criada: 'criou notificação',
+  notificacao_enviada: 'marcou notificação como enviada',
+  retomada_agendada: 'agendou retomada de contato',
+};
+
+export function traduzirAcao(acao) {
+  if (!acao) return '';
+  return ACOES_PT[acao] || String(acao).replace(/_/g, ' ');
+}
+
+const ENTIDADE_PT = {
+  lead: 'lead',
+  cliente: 'cliente',
+  venda: 'venda',
+  apolice: 'apólice',
+  plataforma: 'plataforma',
+  tag: 'tag',
+  sistema: 'sistema',
+};
+
+// "quando humano" relativo (há minutos/horas, ontem, ou data curta).
+function quandoHumano(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const diffMin = Math.round((Date.now() - d.getTime()) / 60000);
+  if (diffMin < 1) return 'agora';
+  if (diffMin < 60) return `há ${diffMin} min`;
+  const diffH = Math.round(diffMin / 60);
+  if (diffH < 24) return `há ${diffH} h`;
+  const diffD = Math.round(diffH / 24);
+  if (diffD === 1) return 'ontem';
+  if (diffD < 7) return `há ${diffD} dias`;
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
+function LogAtividades() {
+  const [itens, setItens] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let vivo = true;
+    api
+      .atividades({ limit: 20 })
+      .then((d) => vivo && setItens(Array.isArray(d) ? d : []))
+      .catch((e) => vivo && setError(e.message || 'Erro ao carregar atividades.'));
+    return () => {
+      vivo = false;
+    };
+  }, []);
+
+  return (
+    <section className={`${CARD} p-5`}>
+      <CardHead
+        title="Atividades recentes"
+        right={<span className="text-xs text-gray-400">últimas {itens ? itens.length : 20}</span>}
+      />
+      {error ? (
+        <p className="text-sm text-red-500">{error}</p>
+      ) : itens == null ? (
+        <ul className="space-y-2.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <li key={i} className="shimmer h-4 w-full rounded bg-gray-100 dark:bg-white/10" />
+          ))}
+        </ul>
+      ) : itens.length === 0 ? (
+        <p className="text-sm text-gray-400">Nenhuma atividade registrada ainda.</p>
+      ) : (
+        <ul className="space-y-2.5">
+          {itens.map((a) => (
+            <li key={a.id} className="flex items-start gap-2.5 text-sm">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-blue/60" aria-hidden="true" />
+              <p className="text-gray-600 dark:text-gray-300">
+                <span className="text-xs text-gray-400">{quandoHumano(a.criado_em)}</span>{' '}
+                <span className="text-gray-400">—</span>{' '}
+                <span className="font-medium text-brand-navy dark:text-white">{a.usuario_nome}</span>{' '}
+                {traduzirAcao(a.acao)}{' '}
+                <span className="text-gray-500 dark:text-gray-400">{ENTIDADE_PT[a.entidade] || a.entidade}</span>
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

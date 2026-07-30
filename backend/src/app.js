@@ -20,6 +20,7 @@ const notificacoesRoutes = require('./routes/notificacoes');
 const posvendasRoutes = require('./routes/posvendas');
 const biCarteiraRoutes = require('./routes/biCarteira');
 const desempenhoRoutes = require('./routes/desempenho');
+const atividadesRoutes = require('./routes/atividades');
 const adminRoutes = require('./routes/admin');
 const internoRoutes = require('./routes/interno');
 
@@ -90,6 +91,7 @@ function createApp() {
     biCarteiraRoutes
   );
   // Desempenho de Equipe (Fase 4): gated por feature flag + permissão 'desempenho'.
+  app.use('/api/atividades', requireAtivo, atividadesRoutes);
   app.use(
     '/api/desempenho',
     requireAtivo,

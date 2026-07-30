@@ -59,6 +59,8 @@ export default function App() {
             <Route path="/vendas" element={<VendasPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/carteira" element={<CarteiraPage />} />
+            {/* URL "esperada" /clientes redireciona para a rota real /carteira. */}
+            <Route path="/clientes" element={<Navigate to="/carteira" replace />} />
             <Route path="/posvendas" element={<PosVendasPage />} />
             <Route path="/inteligencia" element={<InteligenciaPage />} />
             <Route path="/desempenho" element={<DesempenhoPage />} />
