@@ -2,6 +2,15 @@
 // api — todas as chamadas de dados passam pelo backend (Railway), sempre com
 // o access_token do usuário logado no header Authorization.
 // O tenant_id NUNCA é enviado pelo frontend: o backend o extrai do JWT.
+//
+// Módulos adicionados no PR 9 (jul/2026) — em sua maioria reutilizam endpoints
+// já existentes, sem inventar backend:
+//   - Início:        usa /notificacoes/pendentes, /notificacoes/badge, /dashboard
+//   - Clientes:      usa /carteira (rota mantida; label visível "Clientes"),
+//                    /carteira/:id/cancelar
+//   - Inteligência:  usa /atividades (novo neste PR), /bi-carteira, /desempenho,
+//                    /leads (existentes)
+//   - Plataformas:   usa /plataformas (CRUD)
 // =============================================================================
 import { supabase } from './supabaseClient';
 
@@ -378,6 +387,11 @@ export const api = {
   },
   desempenhoVendedores() {
     return request('/api/desempenho/vendedores');
+  },
+
+  // --- Atividades (feed da aba Inteligência) --------------------------------
+  atividades(params = {}) {
+    return request(`/api/atividades${toQuery(params)}`);
   },
 };
 

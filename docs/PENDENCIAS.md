@@ -58,3 +58,9 @@ O que já foi feito e verificado:
 Clonar o repo, `npm install` em `backend/` e `frontend/`, copiar os dois `.env.example` para
 `.env` e preencher (ver READMEs). O uso do sistema em produção não exige nada disso — basta a
 URL do frontend no navegador.
+
+### Testes de frontend (anotação — PR 9, jul/2026)
+- [ ] Cobrir `traduzirAcao(acao)` (feed de Atividades em `InteligenciaPage.jsx`) com
+      teste unitário quando o projeto adotar runner de teste no frontend. A função foi
+      exportada de propósito para facilitar isso. O backend de `/api/atividades` já tem
+      testes (`backend/tests/atividades.test.js`: isolamento por tenant, filtros, limite).

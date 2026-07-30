@@ -16,7 +16,8 @@ const TODOS_ITENS = [
   { to: '/leads', label: 'Leads', icon: Users, perfis: ['administrador', 'gerente', 'lider', 'vendedor', 'secretaria'] },
   { to: '/produtos', label: 'Produtos', icon: Package, perfis: ['administrador', 'gerente'] },
   { to: '/vendas', label: 'Vendas', icon: DollarSign, perfis: ['administrador', 'gerente', 'lider', 'vendedor'] },
-  { to: '/carteira', label: 'Carteira', icon: Briefcase, perfis: ['administrador', 'gerente', 'lider', 'vendedor'], flag: 'carteira' },
+  // Rótulo visível "Clientes" (linguagem da corretora); rota segue /carteira.
+  { to: '/carteira', label: 'Clientes', icon: Briefcase, perfis: ['administrador', 'gerente', 'lider', 'vendedor'], flag: 'carteira' },
   { to: '/posvendas', label: 'Pós-Vendas', icon: Heart, perfis: ['administrador', 'gerente', 'lider', 'vendedor'], flag: 'posvendas' },
   { to: '/inteligencia', label: 'Inteligência', icon: TrendingUp, perfis: ['administrador', 'gerente', 'lider', 'vendedor'], flag: 'bi_carteira' },
   { to: '/desempenho', label: 'Desempenho', icon: Trophy, perfis: ['administrador', 'gerente', 'lider', 'vendedor'], flag: 'desempenho' },
