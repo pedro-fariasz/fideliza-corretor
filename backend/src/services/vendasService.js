@@ -7,7 +7,6 @@ const carteiraClientesRepository = require('../repositories/carteiraClientesRepo
 const comissaoService = require('./comissaoService');
 const atividadesService = require('./atividadesService');
 const { resolverDonoIds, donoPermitido } = require('./escopoService');
-const { FEATURE_FLAGS } = require('../config/constants');
 
 const FORMAS_PAGAMENTO = ['debito', 'boleto', 'pix', 'cartao', 'dinheiro', 'outro'];
 const DATA_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -198,24 +197,37 @@ async function criar(tenantId, input, usuario) {
   }
 
   // Venda concluída com lead sempre promove o lead a cliente da carteira
-  // (independe da feature 'carteira' — a tabela existe desde a migration 010).
+  // (independe de feature flag — a tabela existe desde a migration 010).
   if (venda.status === 'concluida') {
     await promoverLeadParaCliente(tenantId, venda, lead);
   }
 
-  // Fase 1: venda gera apólice automaticamente (só quando a carteira está ativa,
-  // e nunca quebra a venda se falhar — o registro financeiro já está feito).
-  if (FEATURE_FLAGS.carteira && lead) {
+  // Ponte venda -> apólice. Sem apólice o cliente fica órfão e a esteira de
+  // pós-venda nunca enche (era o bug: a apólice ficava atrás de feature flag).
+  // Diferente do log de atividade (fire-and-forget), a apólice é consequência
+  // lógica da venda: se falhar, DERRUBA a venda (rollback). Remover a venda
+  // cascateia as comissões (FK comissoes.venda_id ON DELETE CASCADE).
+  // gerarDeVendaComLead é idempotente por venda_id.
+  if (venda.status === 'concluida' && lead) {
     try {
-      // require tardio: evita ciclo e só carrega quando a feature está ligada.
       const apolicesService = require('./apolicesService');
       await apolicesService.gerarDeVendaComLead(tenantId, venda, produto, lead);
     } catch (err) {
-      console.error('[vendasService.criar] venda ok, mas falhou ao gerar apólice', {
+      console.error('[vendasService.criar] falha ao gerar apólice; desfazendo a venda', {
         tenant_id: tenantId,
         venda_id: venda.id,
         error: err.message,
       });
+      try {
+        await vendasRepository.remove(tenantId, venda.id);
+      } catch (rollbackErr) {
+        console.error('[vendasService.criar] falha ao desfazer a venda órfã (apólice)', {
+          tenant_id: tenantId,
+          venda_id: venda.id,
+          error: rollbackErr.message,
+        });
+      }
+      throw err;
     }
   }
 

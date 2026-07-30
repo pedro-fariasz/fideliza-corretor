@@ -21,6 +21,18 @@ export const CATEGORIAS = [
   { value: 'imobiliario', label: 'Imobiliário' },
 ];
 
+// Vertical única = plano de saúde. Substitui `categoria` no app (migration 016).
+export const TIPOS_PLANO_SAUDE = [
+  { value: 'PF', label: 'PF (Pessoa Física)' },
+  { value: 'PME', label: 'PME' },
+  { value: 'Adesao', label: 'Adesão' },
+  { value: 'PJ', label: 'PJ (Pessoa Jurídica)' },
+  { value: 'Odontologico', label: 'Odontológico' },
+];
+
+// Rótulo curto do tipo do plano (usado na lista/coluna "Tipo").
+export const TIPO_PLANO_SAUDE_LABEL = TIPOS_PLANO_SAUDE.reduce((a, t) => ((a[t.value] = t.label), a), {});
+
 export const INTERESSES = [
   { value: 'consorcio', label: 'Consórcio' },
   { value: 'seguro', label: 'Seguro' },

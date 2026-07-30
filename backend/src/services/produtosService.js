@@ -1,6 +1,9 @@
 const produtosRepository = require('../repositories/produtosRepository');
 
 const CATEGORIAS = ['consorcio', 'seguro', 'saude', 'imobiliario'];
+// Vertical única = plano de saúde. tipo_plano_saude substitui categoria no app;
+// categoria vira legado e é default 'saude' quando o form não a envia.
+const TIPOS_PLANO_SAUDE = ['PF', 'PME', 'Adesao', 'PJ', 'Odontologico'];
 const TIPOS_COMISSAO = ['limitada', 'recorrente'];
 const INICIOS_PAGAMENTO = ['mes_seguinte', 'mesmo_mes'];
 
@@ -54,6 +57,9 @@ function validar(p) {
   if (!p.categoria || !CATEGORIAS.includes(p.categoria)) {
     throw new ValidationError(`categoria inválida. Valores aceitos: ${CATEGORIAS.join(', ')}.`);
   }
+  if (p.tipo_plano_saude != null && !TIPOS_PLANO_SAUDE.includes(p.tipo_plano_saude)) {
+    throw new ValidationError(`tipo_plano_saude inválido. Valores aceitos: ${TIPOS_PLANO_SAUDE.join(', ')}.`);
+  }
   if (!p.tipo_comissao || !TIPOS_COMISSAO.includes(p.tipo_comissao)) {
     throw new ValidationError(`tipo_comissao inválido. Valores aceitos: ${TIPOS_COMISSAO.join(', ')}.`);
   }
@@ -98,6 +104,9 @@ async function criar(tenantId, input) {
   delete payload.tenant_id;
   delete payload.criado_em;
   delete payload.atualizado_em;
+
+  // Vertical única = saúde: se o form não envia categoria (legado), assume 'saude'.
+  if (!payload.categoria) payload.categoria = 'saude';
 
   validar(payload);
   const limpo = limparIrrelevantes(payload);

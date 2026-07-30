@@ -393,6 +393,11 @@ export const api = {
   atividades(params = {}) {
     return request(`/api/atividades${toQuery(params)}`);
   },
+
+  // --- Tenant atual (sidebar: aba Leads condicional a whatsapp_conectado) ---
+  tenantMe() {
+    return request('/api/tenants/me');
+  },
 };
 
 // Monta querystring a partir de um objeto, ignorando vazios/undefined.

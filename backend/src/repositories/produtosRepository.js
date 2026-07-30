@@ -3,7 +3,8 @@ const { supabase } = require('../config/supabase');
 // Colunas que o cliente pode gravar. tenant_id é sempre injetado pelo backend.
 const WRITABLE_COLUMNS = [
   'nome',
-  'categoria',
+  'categoria', // legado (compat) — substituído semanticamente por tipo_plano_saude
+  'tipo_plano_saude',
   'descricao',
   'tipo_comissao',
   'parcelas_limite',
