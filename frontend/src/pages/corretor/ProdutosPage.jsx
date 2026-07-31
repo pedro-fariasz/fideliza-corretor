@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import Modal from '../../components/Modal';
 import FormField from '../../components/FormField';
-import { CATEGORIAS } from '../../utils/crmConstants';
+import { TIPOS_PLANO_SAUDE, TIPO_PLANO_SAUDE_LABEL } from '../../utils/crmConstants';
 
 const VAZIO = {
   nome: '',
-  categoria: '',
+  tipo_plano_saude: '',
   descricao: '',
   tipo_comissao: 'limitada',
   parcelas_limite: '',
@@ -60,7 +60,8 @@ export default function ProdutosPage() {
   function abrirEdicao(p) {
     setForm({
       nome: p.nome || '',
-      categoria: p.categoria || '',
+      // Saúde-only: mostra só tipo_plano_saude (categoria legada é ignorada).
+      tipo_plano_saude: p.tipo_plano_saude || '',
       descricao: p.descricao || '',
       tipo_comissao: p.tipo_comissao || 'limitada',
       parcelas_limite: p.parcelas_limite ?? '',
@@ -86,7 +87,7 @@ export default function ProdutosPage() {
     try {
       const payload = {
         nome: form.nome,
-        categoria: form.categoria,
+        tipo_plano_saude: form.tipo_plano_saude || null,
         descricao: form.descricao,
         tipo_comissao: form.tipo_comissao,
         percentual: form.percentual === '' ? null : Number(form.percentual),
@@ -143,7 +144,7 @@ export default function ProdutosPage() {
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-gray-400">
                 <th className="px-4 py-3">Produto</th>
-                <th className="px-4 py-3">Categoria</th>
+                <th className="px-4 py-3">Tipo</th>
                 <th className="px-4 py-3">Comissão</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3" />
@@ -153,7 +154,9 @@ export default function ProdutosPage() {
               {produtos.map((p) => (
                 <tr key={p.id}>
                   <td className="px-4 py-3 font-medium text-brand-navy dark:text-white">{p.nome}</td>
-                  <td className="px-4 py-3 capitalize text-gray-500 dark:text-gray-400">{p.categoria || '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                    {TIPO_PLANO_SAUDE_LABEL[p.tipo_plano_saude] || p.tipo_plano_saude || p.categoria || '—'}
+                  </td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{labelComissao(p)}</td>
                   <td className="px-4 py-3">
                     {p.ativo ? (
@@ -204,7 +207,7 @@ export default function ProdutosPage() {
       >
         <div className="space-y-4">
           <FormField label="Nome do produto" name="nome" value={form.nome} onChange={onChange} required />
-          <FormField label="Categoria" name="categoria" value={form.categoria} onChange={onChange} options={CATEGORIAS} required />
+          <FormField label="Tipo do plano" name="tipo_plano_saude" value={form.tipo_plano_saude} onChange={onChange} options={TIPOS_PLANO_SAUDE} required />
           <FormField label="Descrição" name="descricao" type="textarea" value={form.descricao} onChange={onChange} />
 
           <FormField

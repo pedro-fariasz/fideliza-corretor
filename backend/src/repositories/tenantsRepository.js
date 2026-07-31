@@ -20,6 +20,18 @@ async function remove(id) {
   if (error) throw error;
 }
 
+// Dados do tenant atual para o app (GET /api/tenants/me). O id vem do JWT.
+async function findById(id) {
+  if (!id) throw new Error('id é obrigatório em tenantsRepository.findById');
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('id, nome, whatsapp_conectado, vertical')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 // Ids de todos os tenants de corretor (exclui o tenant de plataforma interno).
 // Uso restrito a JOBS internos (cron), nunca em rota de usuário.
 async function listCorretorIds() {
@@ -32,4 +44,4 @@ async function listCorretorIds() {
   return (data || []).map((t) => t.id);
 }
 
-module.exports = { create, remove, listCorretorIds };
+module.exports = { create, remove, findById, listCorretorIds };

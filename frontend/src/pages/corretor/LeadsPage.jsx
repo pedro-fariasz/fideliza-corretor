@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Search,
   Columns3,
@@ -12,6 +13,8 @@ import {
   ArrowUpDown,
   UserPlus,
   Filter,
+  Smartphone,
+  ArrowRight,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -75,7 +78,7 @@ function OrigemBadge({ origem }) {
 }
 
 export default function LeadsPage() {
-  const { profile } = useAuth();
+  const { profile, tenant } = useAuth();
   const { push } = useToast();
   const verValores = !profile || profile.pode_ver_valores !== false;
 
@@ -171,6 +174,12 @@ export default function LeadsPage() {
   }
 
   const semNenhum = !loading && !error && leads.length === 0;
+
+  // Leads chegam pelo WhatsApp. Sem número conectado, a aba some do menu; quem
+  // acessa por URL vê o estado explicativo (a rota continua existindo).
+  if (tenant && !tenant.whatsapp_conectado) {
+    return <LeadsWhatsappOff />;
+  }
 
   return (
     <div className="space-y-5">
@@ -292,6 +301,29 @@ export default function LeadsPage() {
         }}
         onSaved={() => carregar()}
       />
+    </div>
+  );
+}
+
+// WhatsApp não conectado: a aba some do menu, mas a rota explica o porquê.
+function LeadsWhatsappOff() {
+  return (
+    <div className="mx-auto mt-6 max-w-lg rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
+      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-blue/10 text-brand-blue">
+        <Smartphone size={26} />
+      </span>
+      <h2 className="mt-4 font-heading text-lg font-semibold text-brand-navy dark:text-white">
+        Leads chegam automaticamente do WhatsApp
+      </h2>
+      <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
+        Conecte o número da corretora em Configurações pra começar.
+      </p>
+      <Link
+        to="/configuracoes"
+        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition-all hover:bg-brand-blue-dark"
+      >
+        Conectar WhatsApp <ArrowRight size={16} />
+      </Link>
     </div>
   );
 }

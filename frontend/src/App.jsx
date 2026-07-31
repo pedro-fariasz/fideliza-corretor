@@ -13,7 +13,6 @@ import AguardandoAprovacaoPage from './pages/AguardandoAprovacaoPage';
 
 // Corretor (shell com sidebar) — CRM de vendas
 import DashboardPage from './pages/corretor/DashboardPage';
-import FunilPage from './pages/corretor/FunilPage';
 import LeadsPage from './pages/corretor/LeadsPage';
 import ProdutosPage from './pages/corretor/ProdutosPage';
 import VendasPage from './pages/corretor/VendasPage';
@@ -53,19 +52,23 @@ export default function App() {
             }
           >
             <Route path="/" element={<DashboardPage />} />
-            <Route path="/funil" element={<FunilPage />} />
             <Route path="/leads" element={<LeadsPage />} />
             <Route path="/produtos" element={<ProdutosPage />} />
-            <Route path="/vendas" element={<VendasPage />} />
-            <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/carteira" element={<CarteiraPage />} />
             {/* URL "esperada" /clientes redireciona para a rota real /carteira. */}
             <Route path="/clientes" element={<Navigate to="/carteira" replace />} />
-            <Route path="/posvendas" element={<PosVendasPage />} />
+            <Route path="/pos-vendas" element={<PosVendasPage />} />
             <Route path="/inteligencia" element={<InteligenciaPage />} />
-            <Route path="/desempenho" element={<DesempenhoPage />} />
+            <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/equipe" element={<EquipePage />} />
             <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+
+            {/* Fora do menu, mas mantidas funcionais (redirect ou acessível por URL). */}
+            <Route path="/funil" element={<Navigate to="/leads" replace />} />
+            <Route path="/posvendas" element={<Navigate to="/pos-vendas" replace />} />
+            <Route path="/plataformas" element={<Navigate to="/carteira" replace />} />
+            <Route path="/vendas" element={<VendasPage />} />
+            <Route path="/desempenho" element={<DesempenhoPage />} />
           </Route>
 
           {/* Equipe interna — shell com sidebar (painel cross-tenant) */}

@@ -29,6 +29,16 @@ async function findById(tenantId, id) {
   return data;
 }
 
+// Idempotência da ponte venda->apólice: uma venda gera no máximo uma apólice.
+async function findByVenda(tenantId, vendaId) {
+  if (!tenantId) throw new Error('tenantId é obrigatório em apolicesRepository.findByVenda');
+  if (!vendaId) return null;
+  const { data, error } = await supabase
+    .from('apolices').select(CAMPOS).eq('tenant_id', tenantId).eq('venda_id', vendaId).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 // Embute nome do cliente e do produto (para as telas de carteira).
 const CAMPOS_LIST = `${CAMPOS}, cliente:carteira_clientes(id,nome), produto:produtos(id,nome)`;
 
@@ -64,4 +74,4 @@ async function update(tenantId, id, patch) {
   return data;
 }
 
-module.exports = { create, findById, list, listByCliente, update };
+module.exports = { create, findById, findByVenda, list, listByCliente, update };

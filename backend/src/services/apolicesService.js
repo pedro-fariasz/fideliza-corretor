@@ -5,6 +5,7 @@ const leadsRepository = require('../repositories/leadsRepository');
 const vendasRepository = require('../repositories/vendasRepository');
 const comissoesRepository = require('../repositories/comissoesRepository');
 const comissaoService = require('./comissaoService');
+const atividadesService = require('./atividadesService');
 const metrics = require('./carteiraMetricsService');
 const { resolverDonoIds, donoPermitido } = require('./escopoService');
 const { FEATURE_FLAGS } = require('../config/constants');
@@ -78,6 +79,10 @@ async function gerarComissoes(tenantId, vendaId, valor, dataVenda, produto) {
 
 // --- Gera a apólice a partir de uma venda (chamado no hook do funil) ----------
 async function gerarDeVenda(tenantId, { venda, produto, cliente_id, corretor_id, data_inicio, data_vencimento }) {
+  // Idempotência: uma venda gera no máximo uma apólice (chave: venda_id).
+  const existente = await apolicesRepository.findByVenda(tenantId, venda.id);
+  if (existente) return existente;
+
   const inicio = data_inicio || venda.data_venda || hoje();
   const vencimento = data_vencimento || somarMeses(inicio, produto.vigencia_meses || 12);
   const apolice = await apolicesRepository.create(tenantId, {
@@ -91,6 +96,15 @@ async function gerarDeVenda(tenantId, { venda, produto, cliente_id, corretor_id,
     data_vencimento: vencimento,
     status: 'ativa',
   });
+
+  // Log de negócio (fire-and-forget: falha aqui não derruba a apólice).
+  await atividadesService.registrar(tenantId, {
+    entidade: 'apolice',
+    entidade_id: apolice.id,
+    acao: 'apolice_criada',
+    detalhes: { venda_id: venda.id, cliente_id, produto_id: produto.id },
+  });
+
   await inicializarPosvenda(tenantId, produto);
   return apolice;
 }

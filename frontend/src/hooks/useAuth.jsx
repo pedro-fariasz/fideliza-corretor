@@ -11,6 +11,9 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState(null);
+  // Dados do tenant do corretor (/api/tenants/me) — usado pelo sidebar para
+  // decidir se a aba Leads aparece (whatsapp_conectado) e afins.
+  const [tenant, setTenant] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -52,6 +55,20 @@ export function AuthProvider({ children }) {
     }
   }, [session, loadProfile]);
 
+  const loadTenant = useCallback(async () => {
+    try {
+      setTenant(await api.tenantMe());
+    } catch {
+      setTenant(null);
+    }
+  }, []);
+
+  // Carrega o tenant só do corretor (o painel interno usa outro shell).
+  useEffect(() => {
+    if (profile && profile.role === 'corretor') loadTenant();
+    else setTenant(null);
+  }, [profile, loadTenant]);
+
   async function signIn(email, password) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
@@ -89,6 +106,8 @@ export function AuthProvider({ children }) {
     profileError,
     role: profile ? profile.role : null,
     status: profile ? profile.status : null,
+    tenant,
+    refreshTenant: loadTenant,
     refreshProfile: loadProfile,
     signIn,
     signUpCorretor,
