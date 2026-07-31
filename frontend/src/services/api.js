@@ -80,6 +80,40 @@ async function publicRequest(path, options = {}) {
   return body;
 }
 
+// Upload multipart (PDF): sem Content-Type manual — o browser define o
+// boundary do multipart/form-data sozinho.
+async function requestFormData(path, formData) {
+  const token = await getAccessToken();
+
+  let response;
+  try {
+    response = await fetch(`${apiBase()}${path}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+  } catch {
+    throw new ApiError(
+      'Não foi possível conectar à API. Verifique sua internet ou se o backend está no ar.',
+      0
+    );
+  }
+
+  let body = null;
+  try {
+    body = await response.json();
+  } catch {
+    // sem corpo JSON
+  }
+
+  if (!response.ok) {
+    const message = (body && body.error) || `Erro inesperado da API (HTTP ${response.status}).`;
+    throw new ApiError(message, response.status);
+  }
+
+  return body;
+}
+
 async function request(path, options = {}) {
   const token = await getAccessToken();
 
@@ -321,6 +355,21 @@ export const api = {
   },
   carteiraSaudeDados() {
     return request('/api/carteira/saude-dados');
+  },
+  carteiraAtualizarCliente(id, payload) {
+    return request(`/api/carteira/clientes/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  },
+
+  // --- Arquivos (PDF de cotação/proposta) ------------------------------------
+  uploadArquivo(tipo, file, leadId) {
+    const fd = new FormData();
+    fd.append('tipo', tipo);
+    fd.append('arquivo', file);
+    if (leadId) fd.append('lead_id', leadId);
+    return requestFormData('/api/arquivos', fd);
+  },
+  listarArquivos(params = {}) {
+    return request(`/api/arquivos${toQuery(params)}`);
   },
   obterApolice(id) {
     return request(`/api/carteira/apolices/${id}`);

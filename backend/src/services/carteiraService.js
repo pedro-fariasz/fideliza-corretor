@@ -5,6 +5,7 @@
 // =============================================================================
 const apolicesRepository = require('../repositories/apolicesRepository');
 const carteiraClientesRepository = require('../repositories/carteiraClientesRepository');
+const arquivosRepository = require('../repositories/arquivosRepository');
 const comissoesRepository = require('../repositories/comissoesRepository');
 const leadsRepository = require('../repositories/leadsRepository');
 const tagsRepository = require('../repositories/tagsRepository');
@@ -77,11 +78,17 @@ async function listarClientes(tenantId, filtros = {}, usuario) {
     });
 }
 
-// Saúde dos dados da carteira — indicadores simples de completude, só com o
-// que já existe no modelo hoje (cpf_cnpj em carteira_clientes). Indicadores
-// como "apólices sem PDF" ou "cotações pendentes" dependem de features que
-// ainda não existem no backend (upload de PDF da proposta, cotações) — ver
-// CLAUDE.md; não inventamos números pra eles aqui.
+const CAMPOS_OBRIGATORIOS_CLIENTE = [
+  { chave: 'cpf_cnpj', label: 'CPF/CNPJ' },
+  { chave: 'telefone', label: 'Telefone' },
+  { chave: 'data_nascimento', label: 'Data de nascimento' },
+];
+
+// Saúde dos dados da carteira. "PDF anexado" e "cotação pendente" agora são
+// reais (tabela `arquivos`, migration 007) — correlacionados por lead_id,
+// já que arquivos não tem FK direta pra carteira_clientes. Sem extração
+// automática por IA ainda (sem integração com a Claude API no backend): um
+// arquivo fica em status_extracao='processando' até alguém tratar à mão.
 async function saudeDados(tenantId, usuario) {
   const donoIds = usuario ? await resolverDonoIds(usuario, 'carteira', 'ler') : null;
   const apolices = await apolicesRepository.list(tenantId, { donoIds });
@@ -90,12 +97,71 @@ async function saudeDados(tenantId, usuario) {
   const clientes = (await carteiraClientesRepository.list(tenantId, {})).filter((c) =>
     clienteIdsEmEscopo.has(c.id)
   );
-  const semCpf = clientes.filter((c) => !c.cpf_cnpj).length;
+
+  const leadIds = clientes.map((c) => c.lead_id).filter(Boolean);
+  const arquivos = leadIds.length ? await arquivosRepository.list(tenantId, { leadIds }) : [];
+  const arquivosPorLead = {};
+  for (const a of arquivos) {
+    if (!a.lead_id) continue;
+    (arquivosPorLead[a.lead_id] = arquivosPorLead[a.lead_id] || []).push(a);
+  }
+
+  const incompletos = [];
+  let clientesComPdf = 0;
+  for (const c of clientes) {
+    const faltando = CAMPOS_OBRIGATORIOS_CLIENTE.filter((f) => !c[f.chave]).map((f) => f.label);
+    const arqsDoCliente = c.lead_id ? arquivosPorLead[c.lead_id] || [] : [];
+    if (arqsDoCliente.length > 0) clientesComPdf += 1;
+    if (faltando.length > 0) {
+      incompletos.push({
+        id: c.id,
+        nome: c.nome,
+        campos_faltando: faltando,
+        score_completude: Math.round(
+          ((CAMPOS_OBRIGATORIOS_CLIENTE.length - faltando.length) / CAMPOS_OBRIGATORIOS_CLIENTE.length) * 100
+        ),
+      });
+    }
+  }
+  incompletos.sort((a, b) => a.score_completude - b.score_completude);
+
+  const cotacoesPendentes = arquivos.filter(
+    (a) => a.tipo === 'cotacao' && a.status_extracao === 'processando'
+  ).length;
 
   return {
     total_clientes: clientes.length,
-    clientes_sem_cpf: semCpf,
+    clientes_sem_cpf: clientes.filter((c) => !c.cpf_cnpj).length,
+    clientes_sem_telefone: clientes.filter((c) => !c.telefone).length,
+    clientes_sem_nascimento: clientes.filter((c) => !c.data_nascimento).length,
+    clientes_com_pdf: clientesComPdf,
+    clientes_sem_pdf: clientes.length - clientesComPdf,
+    cotacoes_pendentes: cotacoesPendentes,
+    incompletos: incompletos.slice(0, 20),
   };
+}
+
+const CAMPOS_EDITAVEIS_CLIENTE = ['telefone', 'email', 'cpf_cnpj', 'data_nascimento', 'empresa'];
+
+// Edição rápida de cliente (usada pelo CTA "Completar cadastro" da Inteligência).
+// Não é um CRUD completo — só os campos que entram no cálculo de completude.
+async function atualizarCliente(tenantId, id, patch, usuario) {
+  const existente = await carteiraClientesRepository.findById(tenantId, id);
+  if (!existente) throw new NotFoundError('Cliente não encontrado.');
+
+  const donoIds = usuario ? await resolverDonoIds(usuario, 'carteira', 'escrever') : null;
+  if (Array.isArray(donoIds)) {
+    const apolicesDoCliente = await apolicesRepository.list(tenantId, { cliente_id: id, donoIds });
+    if (apolicesDoCliente.length === 0) throw new NotFoundError('Cliente não encontrado.');
+  }
+
+  const body = {};
+  for (const campo of CAMPOS_EDITAVEIS_CLIENTE) {
+    if (patch[campo] !== undefined) body[campo] = patch[campo] || null;
+  }
+  const atualizado = await carteiraClientesRepository.update(tenantId, id, body);
+  if (!atualizado) throw new NotFoundError('Cliente não encontrado.');
+  return atualizado;
 }
 
 async function metricas(tenantId, filtros = {}, usuario) {
@@ -361,6 +427,7 @@ async function retomarContatos(tenantId) {
 module.exports = {
   listarClientes,
   saudeDados,
+  atualizarCliente,
   metricas,
   recalcularHealth,
   cancelarCliente,

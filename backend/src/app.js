@@ -24,6 +24,7 @@ const atividadesRoutes = require('./routes/atividades');
 const tenantsRoutes = require('./routes/tenants');
 const adminRoutes = require('./routes/admin');
 const internoRoutes = require('./routes/interno');
+const arquivosRoutes = require('./routes/arquivos');
 
 function createApp() {
   const app = express();
@@ -72,6 +73,8 @@ function createApp() {
   // futura opcional, por isso sem feature flag. Segue protegida pela
   // permissão 'carteira' normal.
   app.use('/api/carteira', requireAtivo, requirePermissao('carteira', 'ler'), carteiraRoutes);
+  // PDFs de cotação/proposta (upload + storage). Gate por permissão dentro do router.
+  app.use('/api/arquivos', requireAtivo, arquivosRoutes);
   // Pós-Vendas (Fase 2): gated por feature flag + permissão 'posvendas' (leitura).
   app.use(
     '/api/posvendas',

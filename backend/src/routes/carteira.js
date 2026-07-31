@@ -15,6 +15,7 @@ router.get('/apolices', carteiraController.listar);
 router.get('/apolices/:id', carteiraController.obter);
 
 // Escrita.
+router.patch('/clientes/:id', escrever, carteiraController.atualizarCliente);
 router.post('/negocio-avulso', escrever, carteiraController.negocioAvulso);
 router.post('/apolices/:id/renovar', escrever, carteiraController.renovar);
 router.patch('/apolices/:id/cancelar', escrever, carteiraController.cancelar);

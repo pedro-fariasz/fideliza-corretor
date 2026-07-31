@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { NavLink, Outlet, useMatch } from 'react-router-dom';
-import { Link } from 'react-router-dom';
 import { Briefcase, Users, Sparkles, MessageCircle, Plus } from 'lucide-react';
+import CadastroClienteModal from '../../components/CadastroClienteModal';
 
 // =============================================================================
 // Hub de Clientes — /clientes. Layout com abas de navegação real (sub-rotas,
@@ -18,6 +19,7 @@ const ABAS = [
 
 export default function ClientesHubPage() {
   const naCarteira = useMatch('/clientes/carteira');
+  const [modalAberto, setModalAberto] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -54,19 +56,22 @@ export default function ClientesHubPage() {
         </div>
 
         {naCarteira && (
-          <Link
-            to="/clientes/novo"
+          <button
+            type="button"
+            onClick={() => setModalAberto(true)}
             aria-label="Novo cliente"
             className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-blue-dark hover:shadow-md"
           >
             <Plus size={16} /> Novo cliente
-          </Link>
+          </button>
         )}
       </div>
 
       <div className="animate-rise">
         <Outlet />
       </div>
+
+      <CadastroClienteModal open={modalAberto} onClose={() => setModalAberto(false)} />
     </div>
   );
 }

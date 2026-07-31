@@ -57,6 +57,15 @@ async function saudeDados(req, res, next) {
   }
 }
 
+async function atualizarCliente(req, res, next) {
+  try {
+    const data = await carteiraService.atualizarCliente(req.tenantId, req.params.id, req.body, req.user);
+    return res.json(data);
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function metricas(req, res, next) {
   try {
     const data = await carteiraService.metricas(req.tenantId, parseFiltros(req.query), req.user);
@@ -102,4 +111,16 @@ async function cancelarCliente(req, res, next) {
   }
 }
 
-module.exports = { pipeline, listar, listarClientes, obter, metricas, saudeDados, negocioAvulso, renovar, cancelar, cancelarCliente };
+module.exports = {
+  pipeline,
+  listar,
+  listarClientes,
+  atualizarCliente,
+  obter,
+  metricas,
+  saudeDados,
+  negocioAvulso,
+  renovar,
+  cancelar,
+  cancelarCliente,
+};

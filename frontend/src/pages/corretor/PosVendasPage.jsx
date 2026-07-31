@@ -19,9 +19,10 @@ import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
 
 // =============================================================================
-// Pós-Vendas (Fase 2) — esteira automática de relacionamento.
+// Fidelização — esteira automática de relacionamento com o cliente já
+// adquirido (apólice ativa na Carteira). Não depende de "venda" como conceito
+// de UI — o gatilho é o cliente ter entrado na carteira, não a venda em si.
 // Um item de menu, 4 abas: Pipeline · Lista · Fluxos · Mensagens.
-// Redesign visual (mesmo design system do dashboard); comportamento preservado.
 // =============================================================================
 
 const ABAS = [
@@ -226,9 +227,9 @@ function PipelineTab() {
       <div className={`${CARD} p-6`}>
         <EmptyState
           icon={Inbox}
-          title="Nenhuma apólice na esteira ainda"
-          description="As apólices entram automaticamente conforme os gatilhos — a primeira etapa é no dia seguinte à venda."
-          cta={{ to: '/vendas', label: 'Ver vendas' }}
+          title="Nenhum cliente na esteira ainda"
+          description="Assim que um lead vira cliente (apólice ativa na Carteira), ele entra aqui automaticamente — a primeira etapa é no dia seguinte."
+          cta={{ to: '/clientes/leads', label: 'Ir para Leads' }}
         />
         <NextSteps />
       </div>
@@ -309,7 +310,7 @@ function PipelineTab() {
 // Sugestões de próximos passos no estado vazio.
 function NextSteps() {
   const passos = [
-    { icon: ShoppingBag, texto: 'Registre uma venda — a apólice entra na esteira automaticamente.' },
+    { icon: ShoppingBag, texto: 'Cadastre um cliente (PDF ou manual) — ele entra na esteira quando a apólice fica ativa.' },
     { icon: Workflow, texto: 'Ajuste os gatilhos de cada etapa na aba Fluxos.' },
     { icon: MessageSquareText, texto: 'Personalize as mensagens por categoria na aba Mensagens.' },
   ];
@@ -361,9 +362,9 @@ function ListaTab() {
       <div className={`${CARD} p-6`}>
         <EmptyState
           icon={Inbox}
-          title="Nenhuma apólice na esteira ainda"
-          description="Assim que você registrar uma venda, o cliente aparece aqui para acompanhamento."
-          cta={{ to: '/vendas', label: 'Ver vendas' }}
+          title="Nenhum cliente na esteira ainda"
+          description="Assim que um cliente tiver apólice ativa na Carteira, ele aparece aqui para acompanhamento."
+          cta={{ to: '/clientes/carteira', label: 'Ir para a Carteira' }}
         />
       </div>
     );
