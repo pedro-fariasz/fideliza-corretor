@@ -14,7 +14,6 @@ import {
   UserPlus,
   Filter,
   Smartphone,
-  ArrowRight,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
@@ -104,7 +103,10 @@ export default function LeadsPage() {
     setError('');
     try {
       const data = await api.listarLeads({ status: 'ativo' });
-      setLeads(Array.isArray(data) ? data : []);
+      const arr = Array.isArray(data) ? data : [];
+      // Lead com venda concluída já virou cliente na Carteira — some do funil
+      // pra não duplicar as listas (ver ClientesHubPage).
+      setLeads(arr.filter((l) => l.estagio !== 'venda_concluida'));
     } catch (err) {
       setError(err.message || 'Erro ao carregar leads.');
     } finally {
@@ -174,12 +176,9 @@ export default function LeadsPage() {
   }
 
   const semNenhum = !loading && !error && leads.length === 0;
-
-  // Leads chegam pelo WhatsApp. Sem número conectado, a aba some do menu; quem
-  // acessa por URL vê o estado explicativo (a rota continua existindo).
-  if (tenant && !tenant.whatsapp_conectado) {
-    return <LeadsWhatsappOff />;
-  }
+  // Sem WhatsApp conectado o corretor ainda trabalha o funil normalmente —
+  // só o botão de disparo de mensagem fica desabilitado (ver QuickActions).
+  const whatsappConectado = Boolean(tenant && tenant.whatsapp_conectado);
 
   return (
     <div className="space-y-5">
@@ -229,6 +228,17 @@ export default function LeadsPage() {
           <Plus size={16} /> Novo lead
         </button>
       </div>
+
+      {!whatsappConectado && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          <span className="flex items-center gap-2">
+            <Smartphone size={15} /> WhatsApp não conectado — os botões de mensagem ficam desabilitados.
+          </span>
+          <Link to="/configuracoes" className="whitespace-nowrap font-semibold underline hover:no-underline">
+            Conectar agora
+          </Link>
+        </div>
+      )}
 
       {/* Pills de estágio com contagem */}
       {!semNenhum && (
@@ -280,14 +290,15 @@ export default function LeadsPage() {
           verValores={verValores}
           onEditar={editar}
           onMover={moverEstagio}
+          whatsappConectado={whatsappConectado}
         />
       ) : (
         <>
           <div className="hidden md:block">
-            <TabelaLeads leads={filtrados} verValores={verValores} sort={sort} onSort={toggleSort} onEditar={editar} onMover={moverEstagio} />
+            <TabelaLeads leads={filtrados} verValores={verValores} sort={sort} onSort={toggleSort} onEditar={editar} onMover={moverEstagio} whatsappConectado={whatsappConectado} />
           </div>
           <div className="md:hidden">
-            <CardsLeads leads={filtrados} verValores={verValores} onEditar={editar} onMover={moverEstagio} />
+            <CardsLeads leads={filtrados} verValores={verValores} onEditar={editar} onMover={moverEstagio} whatsappConectado={whatsappConectado} />
           </div>
         </>
       )}
@@ -301,29 +312,6 @@ export default function LeadsPage() {
         }}
         onSaved={() => carregar()}
       />
-    </div>
-  );
-}
-
-// WhatsApp não conectado: a aba some do menu, mas a rota explica o porquê.
-function LeadsWhatsappOff() {
-  return (
-    <div className="mx-auto mt-6 max-w-lg rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
-      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-blue/10 text-brand-blue">
-        <Smartphone size={26} />
-      </span>
-      <h2 className="mt-4 font-heading text-lg font-semibold text-brand-navy dark:text-white">
-        Leads chegam automaticamente do WhatsApp
-      </h2>
-      <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
-        Conecte o número da corretora em Configurações pra começar.
-      </p>
-      <Link
-        to="/configuracoes"
-        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition-all hover:bg-brand-blue-dark"
-      >
-        Conectar WhatsApp <ArrowRight size={16} />
-      </Link>
     </div>
   );
 }
@@ -365,12 +353,17 @@ function StagePill({ label, count, active, onClick }) {
   );
 }
 
-function QuickActions({ lead, onEditar, onMover }) {
+function QuickActions({ lead, onEditar, onMover, whatsappConectado = true }) {
   const prox = proximoEstagio(lead.estagio);
   return (
     <div className="flex items-center gap-1">
       {lead.telefone && (
-        <IconBtn label="WhatsApp" onClick={() => abrirWhatsApp(lead.telefone)} tone="emerald">
+        <IconBtn
+          label={whatsappConectado ? 'WhatsApp' : 'Conecte o WhatsApp em Configurações para enviar mensagens'}
+          onClick={() => whatsappConectado && abrirWhatsApp(lead.telefone)}
+          tone="emerald"
+          disabled={!whatsappConectado}
+        >
           <MessageCircle size={15} />
         </IconBtn>
       )}
@@ -385,21 +378,28 @@ function QuickActions({ lead, onEditar, onMover }) {
     </div>
   );
 }
-function IconBtn({ children, label, onClick, tone = 'gray' }) {
+function IconBtn({ children, label, onClick, tone = 'gray', disabled = false }) {
   const tones = {
     gray: 'text-gray-400 hover:bg-gray-100 hover:text-brand-navy dark:hover:bg-white/10 dark:hover:text-white',
     blue: 'text-gray-400 hover:bg-brand-blue/10 hover:text-brand-blue',
     emerald: 'text-gray-400 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-500/15 dark:hover:text-emerald-300',
   };
   return (
-    <button type="button" onClick={onClick} aria-label={label} title={label} className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${tones[tone]}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${tones[tone]} ${disabled ? 'cursor-not-allowed opacity-40' : ''}`}
+    >
       {children}
     </button>
   );
 }
 
 // --- Kanban (colunas por estágio; arrastar para mover) ------------------------
-function KanbanLeads({ leads, verValores, onEditar, onMover }) {
+function KanbanLeads({ leads, verValores, onEditar, onMover, whatsappConectado }) {
   const [arrastando, setArrastando] = useState(null);
   const [alvo, setAlvo] = useState(null);
   const porEstagio = (e) => leads.filter((l) => l.estagio === e);
@@ -457,7 +457,7 @@ function KanbanLeads({ leads, verValores, onEditar, onMover }) {
                     ) : null}
                   </div>
                   <div className="mt-2 flex items-center justify-end border-t border-gray-100 pt-2 dark:border-white/5">
-                    <QuickActions lead={lead} onEditar={onEditar} onMover={onMover} />
+                    <QuickActions lead={lead} onEditar={onEditar} onMover={onMover} whatsappConectado={whatsappConectado} />
                   </div>
                 </div>
               ))}
@@ -483,7 +483,7 @@ function SortHead({ label, k, sort, onSort, className = '' }) {
   );
 }
 
-function TabelaLeads({ leads, verValores, sort, onSort, onEditar, onMover }) {
+function TabelaLeads({ leads, verValores, sort, onSort, onEditar, onMover, whatsappConectado }) {
   return (
     <div className={`${CARD} overflow-hidden`}>
       <div className="overflow-x-auto">
@@ -526,7 +526,7 @@ function TabelaLeads({ leads, verValores, sort, onSort, onEditar, onMover }) {
                 <td className="hidden whitespace-nowrap px-4 py-3 text-gray-400 2xl:table-cell">{formatData(l.criado_em)}</td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end">
-                    <QuickActions lead={l} onEditar={onEditar} onMover={onMover} />
+                    <QuickActions lead={l} onEditar={onEditar} onMover={onMover} whatsappConectado={whatsappConectado} />
                   </div>
                 </td>
               </tr>
@@ -538,7 +538,7 @@ function TabelaLeads({ leads, verValores, sort, onSort, onEditar, onMover }) {
   );
 }
 
-function CardsLeads({ leads, verValores, onEditar, onMover }) {
+function CardsLeads({ leads, verValores, onEditar, onMover, whatsappConectado }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {leads.map((l) => (
@@ -558,7 +558,7 @@ function CardsLeads({ leads, verValores, onEditar, onMover }) {
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-white/5">
             <span className="text-xs text-gray-400">{formatData(l.criado_em)}</span>
-            <QuickActions lead={l} onEditar={onEditar} onMover={onMover} />
+            <QuickActions lead={l} onEditar={onEditar} onMover={onMover} whatsappConectado={whatsappConectado} />
           </div>
         </div>
       ))}

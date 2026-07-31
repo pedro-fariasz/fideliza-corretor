@@ -398,6 +398,9 @@ export const api = {
   tenantMe() {
     return request('/api/tenants/me');
   },
+  conectarWhatsapp(token) {
+    return request('/api/tenants/me/whatsapp', { method: 'POST', body: JSON.stringify({ token }) });
+  },
 };
 
 // Monta querystring a partir de um objeto, ignorando vazios/undefined.

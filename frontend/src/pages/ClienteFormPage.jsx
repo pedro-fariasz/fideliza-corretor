@@ -148,7 +148,7 @@ export default function ClienteFormPage() {
   // Depois de salvar: mostra o score retornado pela API e volta pra lista.
   useEffect(() => {
     if (savedScore === null) return undefined;
-    const timer = setTimeout(() => navigate('/', { replace: true }), 3000);
+    const timer = setTimeout(() => navigate('/clientes', { replace: true }), 3000);
     return () => clearTimeout(timer);
   }, [savedScore, navigate]);
 
@@ -167,7 +167,7 @@ export default function ClienteFormPage() {
             </p>
           )}
           <p className="mt-4 text-sm text-gray-400">Voltando para a lista...</p>
-          <Link to="/" className="mt-2 inline-block text-sm font-semibold text-brand-blue underline">
+          <Link to="/clientes" className="mt-2 inline-block text-sm font-semibold text-brand-blue underline">
             Ir para a lista agora
           </Link>
         </div>
@@ -180,12 +180,12 @@ export default function ClienteFormPage() {
       <header className="bg-white shadow-sm">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
-            <Link to="/" aria-label="Voltar para a lista">
+            <Link to="/clientes" aria-label="Voltar para a lista">
               <Logo variant="simbolo" size={32} />
             </Link>
             <h1 className="text-xl font-bold text-brand-navy">Novo cliente</h1>
           </div>
-          <Link to="/" className="text-sm text-gray-500 hover:text-gray-800">
+          <Link to="/clientes" className="text-sm text-gray-500 hover:text-gray-800">
             ← Voltar para a lista
           </Link>
         </div>
@@ -379,7 +379,7 @@ export default function ClienteFormPage() {
           )}
 
           <div className="flex items-center justify-end gap-3 pb-8">
-            <Link to="/" className="text-sm text-gray-500 hover:text-gray-800">
+            <Link to="/clientes" className="text-sm text-gray-500 hover:text-gray-800">
               Cancelar
             </Link>
             <button

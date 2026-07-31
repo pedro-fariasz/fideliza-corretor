@@ -1,6 +1,7 @@
 const vendasRepository = require('../repositories/vendasRepository');
 const comissoesRepository = require('../repositories/comissoesRepository');
 const produtosRepository = require('../repositories/produtosRepository');
+const produtosService = require('./produtosService');
 const leadsRepository = require('../repositories/leadsRepository');
 const interacoesRepository = require('../repositories/interacoesRepository');
 const carteiraClientesRepository = require('../repositories/carteiraClientesRepository');
@@ -105,7 +106,6 @@ async function criar(tenantId, input, usuario) {
   const dataVenda = body.data_venda || hoje();
 
   // --- validações ---
-  if (!body.produto_id) throw new ValidationError('produto_id é obrigatório.');
   if (!(typeof valor === 'number' && valor > 0)) {
     throw new ValidationError('valor da venda deve ser um número maior que zero.');
   }
@@ -116,9 +116,15 @@ async function criar(tenantId, input, usuario) {
     throw new ValidationError('data_venda deve estar no formato YYYY-MM-DD.');
   }
 
-  // produto precisa existir e ser do tenant.
-  const produto = await produtosRepository.findById(tenantId, body.produto_id);
-  if (!produto) throw new ValidationError('Produto não encontrado nesta conta.');
+  // produto precisa existir e ser do tenant. Sem produto_id (ex.: dados vieram
+  // do PDF da proposta ou foram digitados à mão), usa/gera um produto genérico.
+  let produto;
+  if (body.produto_id) {
+    produto = await produtosRepository.findById(tenantId, body.produto_id);
+    if (!produto) throw new ValidationError('Produto não encontrado nesta conta.');
+  } else {
+    produto = await produtosService.obterOuCriarGenerico(tenantId, body.produto_nome);
+  }
 
   // lead é opcional, mas se vier precisa ser do tenant E do escopo do usuário.
   let lead = null;
@@ -144,7 +150,7 @@ async function criar(tenantId, input, usuario) {
   // --- cria a venda ---
   const venda = await vendasRepository.create(tenantId, {
     lead_id: body.lead_id || null,
-    produto_id: body.produto_id,
+    produto_id: produto.id,
     vendedor_id: usuario ? usuario.id : null,
     valor,
     forma_pagamento: body.forma_pagamento || null,
