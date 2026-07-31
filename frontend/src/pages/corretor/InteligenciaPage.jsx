@@ -20,6 +20,8 @@ import { formatBRL } from '../../utils/format';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
+import Modal from '../../components/Modal';
+import FormField from '../../components/FormField';
 
 // =============================================================================
 // Inteligência / BI de Carteira (Fase 3). Lê agregados do backend (job noturno
@@ -219,8 +221,8 @@ function VazioInteligencia({ navigate }) {
       <EmptyState
         icon={Lightbulb}
         title="Sua central de inteligência ainda está no escuro"
-        description="Registre vendas para desbloquear insights sobre a saúde da carteira, receita a renovar e oportunidades de cross-sell."
-        cta={{ to: '/leads', label: 'Ir para o funil' }}
+        description="Cadastre clientes na Carteira para desbloquear insights sobre saúde, receita a renovar e completude dos dados."
+        cta={{ to: '/clientes/carteira', label: 'Ir para a Carteira' }}
       />
       <div className="mx-auto mt-6 grid max-w-3xl gap-3 sm:grid-cols-3">
         {dicas.map((x) => {
@@ -498,52 +500,189 @@ function Painel({ dados, conversao, onCta, navigate }) {
 }
 
 // --- Saúde dos dados (GET /api/carteira/saude-dados) --------------------------
-// Indicadores de completude de cadastro. Só entram aqui campos que já existem
-// no modelo hoje — "apólices sem PDF" e "cotações pendentes" dependem de
-// features que ainda não foram construídas (upload de PDF da proposta,
-// cotações — ver CLAUDE.md), então ficam marcados como "em breve" em vez de
-// mostrar um número inventado.
+// Indicadores de completude de cadastro da carteira. "Com PDF" e "cotações
+// pendentes" vêm da tabela `arquivos` (upload real, ver CadastroClienteModal)
+// — sem inventar número: sem extração automática por IA ainda (não há
+// integração com a Claude API no backend), então "cotação pendente" só
+// significa "arquivo recebido, ninguém tratou ainda".
 function SaudeDadosCard() {
   const [dados, setDados] = useState(null);
   const [error, setError] = useState('');
+  const [editando, setEditando] = useState(null); // cliente sendo editado
+
+  async function carregar() {
+    try {
+      setDados(await api.carteiraSaudeDados());
+    } catch (e) {
+      setError(e.message || 'Erro ao carregar a saúde dos dados.');
+    }
+  }
 
   useEffect(() => {
-    let vivo = true;
-    api
-      .carteiraSaudeDados()
-      .then((d) => vivo && setDados(d))
-      .catch((e) => vivo && setError(e.message || 'Erro ao carregar a saúde dos dados.'));
-    return () => {
-      vivo = false;
-    };
+    carregar(); /* eslint-disable-next-line */
   }, []);
 
   if (error) return null; // não fatal — o resto do painel segue útil sem isso.
 
-  const semCpf = dados ? dados.clientes_sem_cpf : null;
-  const total = dados ? dados.total_clientes : null;
+  const kpis = dados
+    ? [
+        { label: 'Clientes sem CPF', valor: dados.clientes_sem_cpf },
+        { label: 'Sem telefone', valor: dados.clientes_sem_telefone },
+        { label: 'Sem data de nascimento', valor: dados.clientes_sem_nascimento },
+        { label: 'Com PDF anexado', valor: dados.clientes_com_pdf },
+        { label: 'Cotações pendentes', valor: dados.cotacoes_pendentes },
+      ]
+    : [];
 
   return (
     <section className={`${CARD} p-5`}>
-      <CardHead title="Saúde dos dados" />
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4 dark:border-white/10 dark:bg-white/5">
-          <p className="text-xs text-gray-500 dark:text-gray-400">Clientes sem CPF</p>
-          <p className="mt-1 font-heading text-xl font-bold text-brand-navy dark:text-white">
-            {dados == null ? '—' : semCpf}
-            {total ? <span className="ml-1 text-xs font-normal text-gray-400">de {total}</span> : null}
-          </p>
-        </div>
-        <div className="rounded-xl border border-dashed border-gray-200 p-4 text-gray-400 dark:border-white/10">
-          <p className="text-xs">Apólices sem PDF da proposta</p>
-          <p className="mt-1 text-sm">Em breve — depende do upload de PDF</p>
-        </div>
-        <div className="rounded-xl border border-dashed border-gray-200 p-4 text-gray-400 dark:border-white/10">
-          <p className="text-xs">Cotações pendentes</p>
-          <p className="mt-1 text-sm">Em breve — módulo de cotações ainda não existe</p>
-        </div>
+      <CardHead
+        title="Saúde dos dados"
+        right={
+          dados ? (
+            <span className="text-xs text-gray-400">
+              {dados.total_clientes} cliente{dados.total_clientes === 1 ? '' : 's'} na carteira
+            </span>
+          ) : null
+        }
+      />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        {dados == null
+          ? Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-gray-100 bg-gray-50/60 p-4 dark:border-white/10 dark:bg-white/5">
+                <SkelBlock className="h-3 w-20" />
+                <SkelBlock className="mt-2 h-5 w-10" />
+              </div>
+            ))
+          : kpis.map((k) => (
+              <div key={k.label} className="rounded-xl border border-gray-100 bg-gray-50/60 p-4 dark:border-white/10 dark:bg-white/5">
+                <p className="text-xs text-gray-500 dark:text-gray-400">{k.label}</p>
+                <p className="mt-1 font-heading text-xl font-bold text-brand-navy dark:text-white">{k.valor}</p>
+              </div>
+            ))}
       </div>
+
+      {dados && dados.incompletos.length > 0 && (
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wide text-gray-400 dark:border-white/10">
+                <th className="px-3 py-2">Cliente</th>
+                <th className="px-3 py-2">Completude</th>
+                <th className="px-3 py-2">Faltando</th>
+                <th className="px-3 py-2" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+              {dados.incompletos.map((c) => (
+                <tr key={c.id}>
+                  <td className="px-3 py-2 font-medium text-brand-navy dark:text-white">{c.nome}</td>
+                  <td className="px-3 py-2">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        c.score_completude >= 70
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+                          : c.score_completude >= 40
+                            ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+                            : 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300'
+                      }`}
+                    >
+                      {c.score_completude}%
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{c.campos_faltando.join(', ')}</td>
+                  <td className="px-3 py-2 text-right">
+                    <button
+                      type="button"
+                      onClick={() => setEditando(c)}
+                      className="text-sm font-semibold text-brand-blue hover:text-brand-blue-dark"
+                    >
+                      Completar cadastro
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <CompletarCadastroModal cliente={editando} onClose={() => setEditando(null)} onSaved={carregar} />
     </section>
+  );
+}
+
+// Edição rápida (só os campos que entram no score de completude) — sem página
+// de edição própria de carteira_clientes ainda, então fica num modal leve.
+function CompletarCadastroModal({ cliente, onClose, onSaved }) {
+  const [form, setForm] = useState({ cpf_cnpj: '', telefone: '', data_nascimento: '' });
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    if (cliente) {
+      setForm({ cpf_cnpj: '', telefone: '', data_nascimento: '' });
+      setErro('');
+    }
+  }, [cliente]);
+
+  async function salvar() {
+    setSalvando(true);
+    setErro('');
+    try {
+      const payload = {};
+      if (form.cpf_cnpj.trim()) payload.cpf_cnpj = form.cpf_cnpj.trim();
+      if (form.telefone.trim()) payload.telefone = form.telefone.trim();
+      if (form.data_nascimento) payload.data_nascimento = form.data_nascimento;
+      await api.carteiraAtualizarCliente(cliente.id, payload);
+      onSaved();
+      onClose();
+    } catch (err) {
+      setErro(err.message || 'Erro ao salvar.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <Modal
+      open={!!cliente}
+      onClose={onClose}
+      title={cliente ? `Completar cadastro — ${cliente.nome}` : ''}
+      footer={
+        <>
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-300">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={salvar}
+            disabled={salvando}
+            className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-60"
+          >
+            {salvando ? 'Salvando...' : 'Salvar'}
+          </button>
+        </>
+      }
+    >
+      {cliente && (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Faltando: {cliente.campos_faltando.join(', ')}. Preencha só o que tiver à mão.
+          </p>
+          <FormField label="CPF/CNPJ" name="cpf_cnpj" value={form.cpf_cnpj} onChange={(e) => setForm((f) => ({ ...f, cpf_cnpj: e.target.value }))} />
+          <FormField label="Telefone" name="telefone" value={form.telefone} onChange={(e) => setForm((f) => ({ ...f, telefone: e.target.value }))} />
+          <FormField
+            label="Data de nascimento"
+            name="data_nascimento"
+            type="date"
+            value={form.data_nascimento}
+            onChange={(e) => setForm((f) => ({ ...f, data_nascimento: e.target.value }))}
+          />
+          {erro && <p className="text-sm text-red-600">{erro}</p>}
+        </div>
+      )}
+    </Modal>
   );
 }
 
