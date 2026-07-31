@@ -37,6 +37,26 @@ async function obter(req, res, next) {
   }
 }
 
+async function listarClientes(req, res, next) {
+  try {
+    const filtros = {};
+    if (req.query.busca) filtros.busca = String(req.query.busca);
+    const data = await carteiraService.listarClientes(req.tenantId, filtros, req.user);
+    return res.json(data);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function saudeDados(req, res, next) {
+  try {
+    const data = await carteiraService.saudeDados(req.tenantId, req.user);
+    return res.json(data);
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function metricas(req, res, next) {
   try {
     const data = await carteiraService.metricas(req.tenantId, parseFiltros(req.query), req.user);
@@ -82,4 +102,4 @@ async function cancelarCliente(req, res, next) {
   }
 }
 
-module.exports = { pipeline, listar, obter, metricas, negocioAvulso, renovar, cancelar, cancelarCliente };
+module.exports = { pipeline, listar, listarClientes, obter, metricas, saudeDados, negocioAvulso, renovar, cancelar, cancelarCliente };

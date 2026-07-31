@@ -67,14 +67,11 @@ function createApp() {
   // Central de avisos pra corretora: sempre ligada, sem feature flag — agrega
   // várias fontes (cron + esteira de pós-venda) e a usuária final sempre vê.
   app.use('/api/notificacoes', requireAtivo, notificacoesRoutes);
-  // Carteira (Fase 1): gated por feature flag + permissão 'carteira' (leitura).
-  app.use(
-    '/api/carteira',
-    requireAtivo,
-    requireFeature('carteira'),
-    requirePermissao('carteira', 'ler'),
-    carteiraRoutes
-  );
+  // Carteira: core do MVP (venda concluída no funil vira apólice/cliente aqui,
+  // e o hub de Clientes depende disso pra funcionar) — não é mais uma fase
+  // futura opcional, por isso sem feature flag. Segue protegida pela
+  // permissão 'carteira' normal.
+  app.use('/api/carteira', requireAtivo, requirePermissao('carteira', 'ler'), carteiraRoutes);
   // Pós-Vendas (Fase 2): gated por feature flag + permissão 'posvendas' (leitura).
   app.use(
     '/api/posvendas',

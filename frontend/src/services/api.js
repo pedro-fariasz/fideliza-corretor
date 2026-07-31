@@ -316,6 +316,12 @@ export const api = {
   carteiraMetricas(params = {}) {
     return request(`/api/carteira/metricas${toQuery(params)}`);
   },
+  carteiraListarClientes(params = {}) {
+    return request(`/api/carteira/clientes${toQuery(params)}`);
+  },
+  carteiraSaudeDados() {
+    return request('/api/carteira/saude-dados');
+  },
   obterApolice(id) {
     return request(`/api/carteira/apolices/${id}`);
   },

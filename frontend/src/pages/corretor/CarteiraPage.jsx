@@ -52,6 +52,7 @@ const AVULSO_VAZIO = {
 };
 
 export default function CarteiraPage() {
+  const [vista, setVista] = useState('clientes'); // 'clientes' | 'apolices'
   const [dados, setDados] = useState(null);
   const [metr, setMetr] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -157,8 +158,32 @@ export default function CarteiraPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500 dark:text-gray-400">Suas apólices, saúde da carteira e renovações.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div
+          role="tablist"
+          aria-label="Visualização da carteira"
+          className="inline-flex gap-1 rounded-xl border border-gray-100 bg-gray-50 p-1 dark:border-white/10 dark:bg-white/5"
+        >
+          {[
+            { key: 'clientes', label: 'Clientes' },
+            { key: 'apolices', label: 'Apólices' },
+          ].map((v) => (
+            <button
+              key={v.key}
+              type="button"
+              role="tab"
+              aria-selected={vista === v.key}
+              onClick={() => setVista(v.key)}
+              className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all duration-200 ${
+                vista === v.key
+                  ? 'bg-white text-brand-blue shadow-sm dark:bg-white/10 dark:text-white'
+                  : 'text-gray-500 hover:text-brand-navy dark:text-gray-400 dark:hover:text-white'
+              }`}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
         <button
           type="button"
           onClick={() => { setAvulso(AVULSO_VAZIO); setFormErro(''); setAvulsoAberto(true); }}
@@ -168,6 +193,10 @@ export default function CarteiraPage() {
         </button>
       </div>
 
+      {vista === 'clientes' && <ListaClientesTab />}
+
+      {vista === 'apolices' && (
+        <>
       {/* Score + métricas */}
       {m && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
@@ -248,6 +277,8 @@ export default function CarteiraPage() {
           </table>
         </div>
       )}
+        </>
+      )}
 
       {/* Modal negócio avulso */}
       <Modal
@@ -327,6 +358,97 @@ export default function CarteiraPage() {
           {formErro && <p className="text-sm text-red-600">{formErro}</p>}
         </div>
       </Modal>
+    </div>
+  );
+}
+
+// =============================================================================
+// Aba Clientes — lista de carteira_clientes (a promoção real de um lead que
+// virou venda). É a prova visual de que "venda concluída" apareceu na carteira.
+// =============================================================================
+function ListaClientesTab() {
+  const [clientes, setClientes] = useState(null);
+  const [busca, setBusca] = useState('');
+  const [error, setError] = useState('');
+
+  async function carregar() {
+    setError('');
+    try {
+      setClientes(await api.carteiraListarClientes());
+    } catch (err) {
+      setError(err.message || 'Erro ao carregar os clientes.');
+    }
+  }
+
+  useEffect(() => {
+    carregar();
+  }, []);
+
+  const filtrados = (clientes || []).filter((c) =>
+    !busca.trim() || (c.nome || '').toLowerCase().includes(busca.trim().toLowerCase())
+  );
+
+  if (error) return <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>;
+  if (clientes === null) return <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando...</p>;
+
+  return (
+    <div className="space-y-4">
+      <input
+        type="search"
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        placeholder="Buscar cliente por nome..."
+        aria-label="Buscar cliente"
+        className="w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40 dark:border-white/15 dark:bg-white/5 dark:text-white"
+      />
+
+      {filtrados.length === 0 ? (
+        <div className="rounded-xl bg-white p-8 text-center shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
+          <p className="text-gray-600 dark:text-gray-300">
+            {clientes.length === 0 ? 'Nenhum cliente ainda.' : 'Nenhum cliente com esse nome.'}
+          </p>
+          {clientes.length === 0 && (
+            <p className="mt-1 text-sm text-gray-400">
+              Assim que uma venda for concluída no funil (ou um negócio avulso for cadastrado), o cliente aparece aqui.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-white/10">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wide text-gray-400">
+                <th className="px-4 py-3">Nome</th>
+                <th className="px-4 py-3">Contato</th>
+                <th className="px-4 py-3">Produto</th>
+                <th className="px-4 py-3">Apólices ativas</th>
+                <th className="px-4 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm dark:divide-white/5">
+              {filtrados.map((c) => (
+                <tr key={c.id}>
+                  <td className="px-4 py-3 font-medium text-brand-navy dark:text-white">{c.nome}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{c.telefone || c.email || '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{c.produto_principal || '—'}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{c.apolices_ativas}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        c.apolices_ativas > 0
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-500'
+                      }`}
+                    >
+                      {c.apolices_ativas > 0 ? 'Ativo' : 'Sem apólice ativa'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

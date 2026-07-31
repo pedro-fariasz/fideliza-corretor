@@ -19,6 +19,9 @@ import VendasPage from './pages/corretor/VendasPage';
 import AgendaPage from './pages/corretor/AgendaPage';
 import CarteiraPage from './pages/corretor/CarteiraPage';
 import ClientesHubPage from './pages/corretor/ClientesHubPage';
+import ClientesIndicacaoPage from './pages/corretor/ClientesIndicacaoPage';
+import WhatsAppPlaceholderPage from './pages/corretor/WhatsAppPlaceholderPage';
+import FunilPage from './pages/corretor/FunilPage';
 import PosVendasPage from './pages/corretor/PosVendasPage';
 import InteligenciaPage from './pages/corretor/InteligenciaPage';
 import DesempenhoPage from './pages/corretor/DesempenhoPage';
@@ -57,8 +60,16 @@ export default function App() {
             <Route path="/leads" element={<LeadsPage />} />
             <Route path="/produtos" element={<ProdutosPage />} />
             <Route path="/carteira" element={<CarteiraPage />} />
-            {/* Hub de clientes — abas Carteira / Indicação / Leads / WhatsApp. */}
-            <Route path="/clientes" element={<ClientesHubPage />} />
+            {/* Hub de clientes — abas Carteira / Indicação / Leads / WhatsApp,
+                cada uma sua própria sub-rota (com <Outlet /> no layout) para
+                que back/forward e links diretos funcionem de verdade. */}
+            <Route path="/clientes" element={<ClientesHubPage />}>
+              <Route index element={<Navigate to="carteira" replace />} />
+              <Route path="carteira" element={<CarteiraPage />} />
+              <Route path="indicacao" element={<ClientesIndicacaoPage />} />
+              <Route path="leads" element={<FunilPage />} />
+              <Route path="whatsapp" element={<WhatsAppPlaceholderPage />} />
+            </Route>
             <Route path="/pos-vendas" element={<PosVendasPage />} />
             <Route path="/inteligencia" element={<InteligenciaPage />} />
             <Route path="/agenda" element={<AgendaPage />} />

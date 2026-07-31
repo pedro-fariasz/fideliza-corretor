@@ -345,6 +345,9 @@ function Painel({ dados, conversao, onCta, navigate }) {
         ))}
       </div>
 
+      {/* Saúde dos dados */}
+      <SaudeDadosCard />
+
       {/* Insights */}
       {dados.insights && dados.insights.length > 0 && (
         <section className={`${CARD} p-5`}>
@@ -491,6 +494,56 @@ function Painel({ dados, conversao, onCta, navigate }) {
         </section>
       </div>
     </div>
+  );
+}
+
+// --- Saúde dos dados (GET /api/carteira/saude-dados) --------------------------
+// Indicadores de completude de cadastro. Só entram aqui campos que já existem
+// no modelo hoje — "apólices sem PDF" e "cotações pendentes" dependem de
+// features que ainda não foram construídas (upload de PDF da proposta,
+// cotações — ver CLAUDE.md), então ficam marcados como "em breve" em vez de
+// mostrar um número inventado.
+function SaudeDadosCard() {
+  const [dados, setDados] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let vivo = true;
+    api
+      .carteiraSaudeDados()
+      .then((d) => vivo && setDados(d))
+      .catch((e) => vivo && setError(e.message || 'Erro ao carregar a saúde dos dados.'));
+    return () => {
+      vivo = false;
+    };
+  }, []);
+
+  if (error) return null; // não fatal — o resto do painel segue útil sem isso.
+
+  const semCpf = dados ? dados.clientes_sem_cpf : null;
+  const total = dados ? dados.total_clientes : null;
+
+  return (
+    <section className={`${CARD} p-5`}>
+      <CardHead title="Saúde dos dados" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4 dark:border-white/10 dark:bg-white/5">
+          <p className="text-xs text-gray-500 dark:text-gray-400">Clientes sem CPF</p>
+          <p className="mt-1 font-heading text-xl font-bold text-brand-navy dark:text-white">
+            {dados == null ? '—' : semCpf}
+            {total ? <span className="ml-1 text-xs font-normal text-gray-400">de {total}</span> : null}
+          </p>
+        </div>
+        <div className="rounded-xl border border-dashed border-gray-200 p-4 text-gray-400 dark:border-white/10">
+          <p className="text-xs">Apólices sem PDF da proposta</p>
+          <p className="mt-1 text-sm">Em breve — depende do upload de PDF</p>
+        </div>
+        <div className="rounded-xl border border-dashed border-gray-200 p-4 text-gray-400 dark:border-white/10">
+          <p className="text-xs">Cotações pendentes</p>
+          <p className="mt-1 text-sm">Em breve — módulo de cotações ainda não existe</p>
+        </div>
+      </div>
+    </section>
   );
 }
 
