@@ -220,7 +220,7 @@ function VazioInteligencia({ navigate }) {
         icon={Lightbulb}
         title="Sua central de inteligência ainda está no escuro"
         description="Registre vendas para desbloquear insights sobre a saúde da carteira, receita a renovar e oportunidades de cross-sell."
-        cta={{ to: '/funil', label: 'Ir para o funil' }}
+        cta={{ to: '/leads', label: 'Ir para o funil' }}
       />
       <div className="mx-auto mt-6 grid max-w-3xl gap-3 sm:grid-cols-3">
         {dicas.map((x) => {

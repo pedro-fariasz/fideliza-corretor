@@ -47,7 +47,7 @@ function situacao(a) {
 
 const AVULSO_VAZIO = {
   nome: '', telefone: '', email: '', empresa: '', data_nascimento: '',
-  produto_id: '', valor: '', forma_pagamento: '', data_inicio: new Date().toISOString().slice(0, 10),
+  produto_id: '', produto_nome: '', valor: '', forma_pagamento: '', data_inicio: new Date().toISOString().slice(0, 10),
   prazo: '12', data_vencimento: '', observacoes: '',
 };
 
@@ -60,6 +60,7 @@ export default function CarteiraPage() {
 
   const [avulsoAberto, setAvulsoAberto] = useState(false);
   const [avulso, setAvulso] = useState(AVULSO_VAZIO);
+  const [avulsoManual, setAvulsoManual] = useState(false);
   const [cancelar, setCancelar] = useState(null); // apólice
   const [motivo, setMotivo] = useState('preco');
   const [salvando, setSalvando] = useState(false);
@@ -81,7 +82,14 @@ export default function CarteiraPage() {
 
   useEffect(() => {
     carregar();
-    api.listarProdutos({ ativo: true }).then((p) => setProdutos(Array.isArray(p) ? p : [])).catch(() => {});
+    api
+      .listarProdutos({ ativo: true })
+      .then((p) => {
+        const lista = Array.isArray(p) ? p : [];
+        setProdutos(lista);
+        setAvulsoManual(lista.length === 0);
+      })
+      .catch(() => {});
   }, []);
 
   function onAvulsoChange(e) {
@@ -99,7 +107,8 @@ export default function CarteiraPage() {
         email: avulso.email || null,
         empresa: avulso.empresa || null,
         data_nascimento: avulso.data_nascimento || null,
-        produto_id: avulso.produto_id,
+        produto_id: avulsoManual ? null : avulso.produto_id,
+        produto_nome: avulsoManual ? avulso.produto_nome || null : null,
         valor: avulso.valor === '' ? null : Number(avulso.valor),
         forma_pagamento: avulso.forma_pagamento || null,
         data_inicio: avulso.data_inicio,
@@ -248,15 +257,12 @@ export default function CarteiraPage() {
         footer={
           <>
             <button type="button" onClick={() => setAvulsoAberto(false)} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-300">Cancelar</button>
-            <button type="button" onClick={salvarAvulso} disabled={salvando || produtos.length === 0} className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-60">
+            <button type="button" onClick={salvarAvulso} disabled={salvando} className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-60">
               {salvando ? 'Salvando...' : 'Cadastrar'}
             </button>
           </>
         }
       >
-        {produtos.length === 0 ? (
-          <p className="text-sm text-gray-600 dark:text-gray-300">Cadastre um produto ativo antes (ele define a vigência da apólice).</p>
-        ) : (
           <div className="space-y-4">
             <FormField label="Nome do cliente" name="nome" value={avulso.nome} onChange={onAvulsoChange} required />
             <div className="grid grid-cols-2 gap-3">
@@ -267,7 +273,26 @@ export default function CarteiraPage() {
               <FormField label="Empresa" name="empresa" value={avulso.empresa} onChange={onAvulsoChange} />
               <FormField label="Data de nascimento" name="data_nascimento" type="date" value={avulso.data_nascimento} onChange={onAvulsoChange} />
             </div>
-            <FormField label="Produto" name="produto_id" value={avulso.produto_id} onChange={onAvulsoChange} options={produtos.map((p) => ({ value: p.id, label: p.nome }))} required />
+            {avulsoManual ? (
+              <FormField
+                label="Nome do plano / operadora"
+                name="produto_nome"
+                value={avulso.produto_nome}
+                onChange={onAvulsoChange}
+                placeholder="Ex.: Amil S450 (digite se o PDF não foi lido)"
+              />
+            ) : (
+              <FormField label="Produto" name="produto_id" value={avulso.produto_id} onChange={onAvulsoChange} options={produtos.map((p) => ({ value: p.id, label: p.nome }))} required />
+            )}
+            {produtos.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setAvulsoManual((m) => !m)}
+                className="text-xs font-semibold text-brand-blue hover:text-brand-blue-dark"
+              >
+                {avulsoManual ? 'Selecionar da lista de produtos' : 'Digitar nome manualmente'}
+              </button>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Valor do negócio (R$)" name="valor" type="number" min={0.01} step="0.01" value={avulso.valor} onChange={onAvulsoChange} required />
               <FormField label="Forma de pagamento" name="forma_pagamento" value={avulso.forma_pagamento} onChange={onAvulsoChange} options={FORMAS_PAGAMENTO} />
@@ -280,7 +305,6 @@ export default function CarteiraPage() {
             <FormField label="Observações" name="observacoes" type="textarea" value={avulso.observacoes} onChange={onAvulsoChange} />
             {formErro && <p className="text-sm text-red-600">{formErro}</p>}
           </div>
-        )}
       </Modal>
 
       {/* Modal cancelar */}

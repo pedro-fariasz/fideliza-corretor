@@ -32,6 +32,21 @@ async function findById(id) {
   return data;
 }
 
+// Conecta/desconecta o WhatsApp do tenant (placeholder até a integração
+// oficial Meta Cloud API existir — v2.5, ver CLAUDE.md). Nunca guarda o token
+// bruto: só o estado de conexão.
+async function setWhatsappConectado(id, conectado) {
+  if (!id) throw new Error('id é obrigatório em tenantsRepository.setWhatsappConectado');
+  const { data, error } = await supabase
+    .from('tenants')
+    .update({ whatsapp_conectado: conectado })
+    .eq('id', id)
+    .select('id, nome, whatsapp_conectado, vertical')
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 // Ids de todos os tenants de corretor (exclui o tenant de plataforma interno).
 // Uso restrito a JOBS internos (cron), nunca em rota de usuário.
 async function listCorretorIds() {
@@ -44,4 +59,4 @@ async function listCorretorIds() {
   return (data || []).map((t) => t.id);
 }
 
-module.exports = { create, remove, findById, listCorretorIds };
+module.exports = { create, remove, findById, setWhatsappConectado, listCorretorIds };

@@ -1,6 +1,7 @@
 const apolicesRepository = require('../repositories/apolicesRepository');
 const carteiraClientesRepository = require('../repositories/carteiraClientesRepository');
 const produtosRepository = require('../repositories/produtosRepository');
+const produtosService = require('./produtosService');
 const leadsRepository = require('../repositories/leadsRepository');
 const vendasRepository = require('../repositories/vendasRepository');
 const comissoesRepository = require('../repositories/comissoesRepository');
@@ -126,15 +127,21 @@ async function criarNegocioAvulso(tenantId, input, usuario) {
   const valor = coerceNum(body.valor);
   const dataInicio = body.data_inicio || hoje();
 
-  if (!body.produto_id) throw new ValidationError('Produto é obrigatório.');
   if (!(valor > 0)) throw new ValidationError('Valor do negócio deve ser maior que zero.');
   if (!DATA_RE.test(String(dataInicio))) throw new ValidationError('data_inicio deve ser YYYY-MM-DD.');
   if (body.forma_pagamento && !FORMAS_PAGAMENTO.includes(body.forma_pagamento)) {
     throw new ValidationError(`forma_pagamento inválida. Aceitos: ${FORMAS_PAGAMENTO.join(', ')}.`);
   }
 
-  const produto = await produtosRepository.findById(tenantId, body.produto_id);
-  if (!produto) throw new ValidationError('Produto não encontrado nesta conta.');
+  // Sem produto_id (nome digitado à mão, sem catálogo pré-cadastrado), usa/gera
+  // um produto genérico com a regra de comissão padrão.
+  let produto;
+  if (body.produto_id) {
+    produto = await produtosRepository.findById(tenantId, body.produto_id);
+    if (!produto) throw new ValidationError('Produto não encontrado nesta conta.');
+  } else {
+    produto = await produtosService.obterOuCriarGenerico(tenantId, body.produto_nome);
+  }
 
   const vencimento = body.data_vencimento || somarMeses(dataInicio, produto.vigencia_meses || 12);
   if (!DATA_RE.test(String(vencimento))) throw new ValidationError('data_vencimento inválida.');

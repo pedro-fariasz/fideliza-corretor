@@ -18,11 +18,13 @@ import ProdutosPage from './pages/corretor/ProdutosPage';
 import VendasPage from './pages/corretor/VendasPage';
 import AgendaPage from './pages/corretor/AgendaPage';
 import CarteiraPage from './pages/corretor/CarteiraPage';
+import ClientesHubPage from './pages/corretor/ClientesHubPage';
 import PosVendasPage from './pages/corretor/PosVendasPage';
 import InteligenciaPage from './pages/corretor/InteligenciaPage';
 import DesempenhoPage from './pages/corretor/DesempenhoPage';
 import EquipePage from './pages/corretor/EquipePage';
 import ConfiguracoesPage from './pages/corretor/ConfiguracoesPage';
+import ClienteFormPage from './pages/ClienteFormPage';
 
 // Equipe interna (shell com sidebar)
 import CorretoresPage from './pages/interna/CorretoresPage';
@@ -55,8 +57,8 @@ export default function App() {
             <Route path="/leads" element={<LeadsPage />} />
             <Route path="/produtos" element={<ProdutosPage />} />
             <Route path="/carteira" element={<CarteiraPage />} />
-            {/* URL "esperada" /clientes redireciona para a rota real /carteira. */}
-            <Route path="/clientes" element={<Navigate to="/carteira" replace />} />
+            {/* Hub de clientes — abas Carteira / Indicação / Leads / WhatsApp. */}
+            <Route path="/clientes" element={<ClientesHubPage />} />
             <Route path="/pos-vendas" element={<PosVendasPage />} />
             <Route path="/inteligencia" element={<InteligenciaPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
@@ -70,6 +72,16 @@ export default function App() {
             <Route path="/vendas" element={<VendasPage />} />
             <Route path="/desempenho" element={<DesempenhoPage />} />
           </Route>
+
+          {/* Cadastro de cliente — página cheia própria, fora do shell do CRM. */}
+          <Route
+            path="/clientes/novo"
+            element={
+              <ProtectedRoute roles={['corretor']}>
+                <ClienteFormPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Equipe interna — shell com sidebar (painel cross-tenant) */}
           <Route

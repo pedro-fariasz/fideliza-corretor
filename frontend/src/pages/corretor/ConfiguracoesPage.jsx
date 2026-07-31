@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../services/supabaseClient';
+import { api } from '../../services/api';
 
 const ROLE_LABELS = { corretor: 'Corretor', funcionario: 'Funcionário', admin: 'Administrador' };
 
-// Configurações do corretor: dados da conta + alterar senha.
+// Configurações do corretor: dados da conta + alterar senha + conexão WhatsApp.
 // A senha é trocada direto no Supabase Auth (mesmo cliente usado no login),
 // sem passar pelo backend.
 export default function ConfiguracoesPage() {
-  const { profile } = useAuth();
+  const { profile, tenant, refreshTenant } = useAuth();
 
   const [senha, setSenha] = useState('');
   const [confirma, setConfirma] = useState('');
@@ -39,6 +40,30 @@ export default function ConfiguracoesPage() {
       setMsg({ tipo: 'erro', texto: err.message || 'Não foi possível alterar a senha.' });
     } finally {
       setSalvando(false);
+    }
+  }
+
+  const [token, setToken] = useState('');
+  const [conectando, setConectando] = useState(false);
+  const [whatsappMsg, setWhatsappMsg] = useState(null); // { tipo: 'ok'|'erro', texto }
+
+  async function conectarWhatsapp(e) {
+    e.preventDefault();
+    setWhatsappMsg(null);
+    if (!token.trim()) {
+      setWhatsappMsg({ tipo: 'erro', texto: 'Informe o token de acesso.' });
+      return;
+    }
+    setConectando(true);
+    try {
+      await api.conectarWhatsapp(token.trim());
+      setToken('');
+      setWhatsappMsg({ tipo: 'ok', texto: 'WhatsApp conectado com sucesso.' });
+      await refreshTenant();
+    } catch (err) {
+      setWhatsappMsg({ tipo: 'erro', texto: err.message || 'Não foi possível conectar o WhatsApp.' });
+    } finally {
+      setConectando(false);
     }
   }
 
@@ -112,6 +137,57 @@ export default function ConfiguracoesPage() {
             {salvando ? 'Salvando...' : 'Salvar nova senha'}
           </button>
         </form>
+      </section>
+
+      {/* Conexão WhatsApp (API Meta) */}
+      <section className="rounded-xl bg-white p-5 shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
+        <h2 className="mb-1 font-heading text-base font-semibold text-brand-navy dark:text-white">
+          Conexão WhatsApp (API Meta)
+        </h2>
+        <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+          Conecte o número da corretora pela API oficial do WhatsApp (Meta Cloud API) para enviar
+          mensagens direto dos leads e da carteira.
+        </p>
+
+        {tenant && tenant.whatsapp_conectado ? (
+          <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+            WhatsApp conectado.
+          </p>
+        ) : (
+          <>
+            {whatsappMsg && (
+              <p
+                className={`mb-3 rounded-md px-3 py-2 text-sm ${
+                  whatsappMsg.tipo === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                }`}
+              >
+                {whatsappMsg.texto}
+              </p>
+            )}
+            <form onSubmit={conectarWhatsapp} className="space-y-3">
+              <div>
+                <label htmlFor="whatsapp-token" className="mb-1 block text-sm text-gray-600 dark:text-gray-300">
+                  Token de acesso
+                </label>
+                <input
+                  id="whatsapp-token"
+                  type="text"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  placeholder="Token da API oficial (Meta Cloud API)"
+                  className={inputClass}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={conectando}
+                className="rounded-md bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-60"
+              >
+                {conectando ? 'Conectando...' : 'Conectar API Oficial'}
+              </button>
+            </form>
+          </>
+        )}
       </section>
     </div>
   );

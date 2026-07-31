@@ -132,6 +132,28 @@ async function obterPorId(tenantId, id) {
   return produto;
 }
 
+const NOME_GENERICO_PADRAO = 'Plano de Saúde Genérico';
+
+// Usado quando a venda/negócio avulso não veio de um produto pré-cadastrado
+// (ex.: dados extraídos do PDF da proposta, ou digitados à mão). Reaproveita
+// um produto genérico existente com o mesmo nome nesta conta, ou cria um com
+// a regra de comissão padrão — o corretor pode ajustá-la depois em Produtos.
+async function obterOuCriarGenerico(tenantId, nomeManual) {
+  const nome = (nomeManual && String(nomeManual).trim()) || NOME_GENERICO_PADRAO;
+  const existentes = await produtosRepository.list(tenantId, { ativo: true });
+  const encontrado = existentes.find((p) => p.nome.toLowerCase() === nome.toLowerCase());
+  if (encontrado) return encontrado;
+
+  return produtosRepository.create(tenantId, {
+    nome,
+    categoria: 'saude',
+    tipo_comissao: 'recorrente',
+    percentual: 5,
+    inicio_pagamento: 'mes_seguinte',
+    ativo: true,
+  });
+}
+
 async function atualizar(tenantId, id, input) {
   const existente = await produtosRepository.findById(tenantId, id);
   if (!existente) throw new NotFoundError('Produto não encontrado.');
@@ -174,6 +196,7 @@ module.exports = {
   criar,
   listar,
   obterPorId,
+  obterOuCriarGenerico,
   atualizar,
   desativar,
   ValidationError,
