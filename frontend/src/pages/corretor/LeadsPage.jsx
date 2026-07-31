@@ -19,6 +19,7 @@ import { api } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import LeadFormModal from '../../components/LeadFormModal';
+import VendaFormModal from '../../components/VendaFormModal';
 import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
 import { ESTAGIO_LABEL, ESTAGIOS, INTERESSES } from '../../utils/crmConstants';
@@ -93,6 +94,7 @@ export default function LeadsPage() {
 
   const [aberto, setAberto] = useState(false);
   const [editLead, setEditLead] = useState(null);
+  const [vendaLead, setVendaLead] = useState(null);
 
   useEffect(() => {
     localStorage.setItem(VIEW_KEY, view);
@@ -155,6 +157,13 @@ export default function LeadsPage() {
 
   async function moverEstagio(lead, novoEstagio) {
     if (!novoEstagio || lead.estagio === novoEstagio) return;
+    // "Venda Concluída" não é um simples troca de estágio: precisa registrar a
+    // venda (produto, valor, comissão) — é isso que promove o lead a cliente
+    // na Carteira. Sem passar pelo modal, o lead "sumia" no ar sem gerar nada.
+    if (novoEstagio === 'venda_concluida') {
+      setVendaLead(lead);
+      return;
+    }
     const anterior = lead.estagio;
     setLeads((ls) => ls.map((l) => (l.id === lead.id ? { ...l, estagio: novoEstagio } : l))); // otimista
     try {
@@ -311,6 +320,15 @@ export default function LeadsPage() {
           setEditLead(null);
         }}
         onSaved={() => carregar()}
+      />
+      <VendaFormModal
+        open={!!vendaLead}
+        lead={vendaLead}
+        onClose={() => setVendaLead(null)}
+        onSaved={() => {
+          setVendaLead(null);
+          carregar();
+        }}
       />
     </div>
   );

@@ -105,11 +105,12 @@ export default function PosVendasPage() {
         </span>
         <div>
           <h2 className="font-heading text-lg font-semibold text-brand-navy dark:text-white">
-            Esteira de relacionamento
+            Fidelização — relacionamento e manutenção
           </h2>
           <p className="mt-0.5 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-            O cliente avança sozinho conforme o tempo passa. Configure os gatilhos e as mensagens por
-            categoria — e acompanhe cada etapa aqui.
+            Depois que a venda vira apólice ativa, o cliente entra aqui pra manutenção do relacionamento —
+            avança sozinho conforme o tempo passa. Configure os gatilhos e as mensagens por categoria, e
+            acompanhe cada etapa.
           </p>
         </div>
       </div>

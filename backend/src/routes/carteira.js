@@ -9,6 +9,8 @@ const escrever = requirePermissao('carteira', 'escrever');
 // Leitura (o gate 'carteira','ler' é aplicado no mount em app.js).
 router.get('/pipeline', carteiraController.pipeline);
 router.get('/metricas', carteiraController.metricas);
+router.get('/saude-dados', carteiraController.saudeDados);
+router.get('/clientes', carteiraController.listarClientes);
 router.get('/apolices', carteiraController.listar);
 router.get('/apolices/:id', carteiraController.obter);
 

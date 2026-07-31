@@ -45,6 +45,59 @@ function somarDias(dataISO, dias) {
   return d.toISOString().slice(0, 10);
 }
 
+// Lista os clientes da carteira (carteira_clientes — a tabela nova do CRM,
+// não confundir com a tabela legada `clientes` do pós-venda pré-pivô). Usado
+// pela aba Carteira do hub de Clientes: é a prova visual de que uma venda
+// concluída realmente promoveu o lead a cliente. Escopo pelas apólices do
+// usuário, mesmo critério de `metricas`.
+async function listarClientes(tenantId, filtros = {}, usuario) {
+  const donoIds = usuario ? await resolverDonoIds(usuario, 'carteira', 'ler') : null;
+
+  const apolices = await apolicesRepository.list(tenantId, { donoIds });
+  const clienteIdsEmEscopo = new Set(apolices.map((a) => a.cliente_id));
+
+  const porCliente = {};
+  for (const a of apolices) {
+    if (!porCliente[a.cliente_id]) porCliente[a.cliente_id] = [];
+    porCliente[a.cliente_id].push(a);
+  }
+
+  const clientes = await carteiraClientesRepository.list(tenantId, { busca: filtros.busca });
+
+  return clientes
+    .filter((c) => clienteIdsEmEscopo.has(c.id))
+    .map((c) => {
+      const apsCliente = porCliente[c.id] || [];
+      const ativas = apsCliente.filter((a) => a.status === 'ativa');
+      return {
+        ...c,
+        apolices_ativas: ativas.length,
+        produto_principal: ativas[0] && ativas[0].produto ? ativas[0].produto.nome : null,
+      };
+    });
+}
+
+// Saúde dos dados da carteira — indicadores simples de completude, só com o
+// que já existe no modelo hoje (cpf_cnpj em carteira_clientes). Indicadores
+// como "apólices sem PDF" ou "cotações pendentes" dependem de features que
+// ainda não existem no backend (upload de PDF da proposta, cotações) — ver
+// CLAUDE.md; não inventamos números pra eles aqui.
+async function saudeDados(tenantId, usuario) {
+  const donoIds = usuario ? await resolverDonoIds(usuario, 'carteira', 'ler') : null;
+  const apolices = await apolicesRepository.list(tenantId, { donoIds });
+  const clienteIdsEmEscopo = new Set(apolices.map((a) => a.cliente_id));
+
+  const clientes = (await carteiraClientesRepository.list(tenantId, {})).filter((c) =>
+    clienteIdsEmEscopo.has(c.id)
+  );
+  const semCpf = clientes.filter((c) => !c.cpf_cnpj).length;
+
+  return {
+    total_clientes: clientes.length,
+    clientes_sem_cpf: semCpf,
+  };
+}
+
 async function metricas(tenantId, filtros = {}, usuario) {
   const de = filtros.de || '2000-01-01';
   const ate = filtros.ate || hoje();
@@ -306,6 +359,8 @@ async function retomarContatos(tenantId) {
 }
 
 module.exports = {
+  listarClientes,
+  saudeDados,
   metricas,
   recalcularHealth,
   cancelarCliente,
