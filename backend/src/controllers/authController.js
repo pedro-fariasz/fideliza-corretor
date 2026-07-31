@@ -45,7 +45,6 @@ async function me(req, res) {
     pode_ver_valores: podeVerValores(req.user),
     flags: {
       equipe: FEATURE_FLAGS.equipe,
-      carteira: FEATURE_FLAGS.carteira,
       posvendas: FEATURE_FLAGS.posvendas,
       bi_carteira: FEATURE_FLAGS.bi_carteira,
       desempenho: FEATURE_FLAGS.desempenho,

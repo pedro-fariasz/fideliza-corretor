@@ -21,9 +21,6 @@ const FEATURE_FLAGS = {
   get equipe() {
     return flagAtiva('FEATURE_EQUIPE');
   },
-  get carteira() {
-    return flagAtiva('FEATURE_CARTEIRA');
-  },
   get posvendas() {
     return flagAtiva('FEATURE_POSVENDAS');
   },
