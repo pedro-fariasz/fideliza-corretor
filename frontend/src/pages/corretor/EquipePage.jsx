@@ -14,6 +14,7 @@ const CARGOS = [
 ];
 
 const NOVO_VAZIO = { nome: '', email: '', senha: '', confirmarSenha: '', cargo: 'vendedor', lider_id: '' };
+const CARD = 'rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-white/5';
 
 export default function EquipePage() {
   const { profile } = useAuth();
@@ -130,7 +131,7 @@ export default function EquipePage() {
               setNovoForm(NOVO_VAZIO);
               setFormErro('');
             }}
-            className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark"
+            className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark"
           >
             + Corretor
           </button>
@@ -141,7 +142,7 @@ export default function EquipePage() {
               setNovoForm(NOVO_VAZIO);
               setFormErro('');
             }}
-            className="rounded-lg border border-brand-blue px-4 py-2 text-sm font-semibold text-brand-blue hover:bg-brand-blue/5"
+            className="press rounded-lg border border-brand-blue px-4 py-2 text-sm font-semibold text-brand-blue transition-colors hover:bg-brand-blue/5"
           >
             + Secretária
           </button>
@@ -149,68 +150,76 @@ export default function EquipePage() {
       </div>
 
       {loading ? (
-        <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando...</p>
+        <EquipeSkeleton />
       ) : error ? (
-        <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+          {error}
+        </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-white/10">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-gray-400">
-                <th className="px-4 py-3">Nome</th>
-                <th className="px-4 py-3">Papel</th>
-                <th className="px-4 py-3">Cargo</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Último acesso</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-sm dark:divide-white/5">
-              {usuarios.map((u) => (
-                <tr key={u.id}>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-brand-navy dark:text-white">{u.nome || '—'}</div>
-                    <div className="text-xs text-gray-400">{u.email}</div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{PAPEL_LABEL[u.papel_conta] || '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{CARGO_LABEL[u.cargo] || '—'}</td>
-                  <td className="px-4 py-3">
-                    {u.ativo ? (
-                      <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Ativo</span>
-                    ) : (
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">Inativo</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-400">{u.ultimo_acesso ? formatDataHora(u.ultimo_acesso) : '—'}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditUser({ ...u, lider_id: u.lider_id || '' });
-                        setFormErro('');
-                      }}
-                      className="mr-3 text-sm font-medium text-brand-blue hover:text-brand-blue-dark"
-                    >
-                      Editar
-                    </button>
-                    {u.id !== profile.id && u.ativo && (
+        <div className={`${CARD} overflow-hidden`}>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wide text-gray-400 dark:border-white/10">
+                  <th className="px-4 py-3">Nome</th>
+                  <th className="px-4 py-3">Papel</th>
+                  <th className="px-4 py-3">Cargo</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Último acesso</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                {usuarios.map((u, i) => (
+                  <tr
+                    key={u.id}
+                    style={{ '--rise-delay': `${Math.min(i, 10) * 30}ms` }}
+                    className="animate-rise-row transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-brand-navy dark:text-white">{u.nome || '—'}</div>
+                      <div className="text-xs text-gray-400">{u.email}</div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{PAPEL_LABEL[u.papel_conta] || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{CARGO_LABEL[u.cargo] || '—'}</td>
+                    <td className="px-4 py-3">
+                      {u.ativo ? (
+                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">Ativo</span>
+                      ) : (
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-white/10 dark:text-gray-300">Inativo</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-400">{u.ultimo_acesso ? formatDataHora(u.ultimo_acesso) : '—'}</td>
+                    <td className="px-4 py-3 text-right">
                       <button
                         type="button"
                         onClick={() => {
-                          setDesativarUser(u);
-                          setTransferParaId('');
+                          setEditUser({ ...u, lider_id: u.lider_id || '' });
                           setFormErro('');
                         }}
-                        className="text-sm font-medium text-gray-400 hover:text-red-600"
+                        className="press mr-3 text-sm font-medium text-brand-blue transition-colors hover:text-brand-blue-dark"
                       >
-                        Desativar
+                        Editar
                       </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      {u.id !== profile.id && u.ativo && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDesativarUser(u);
+                            setTransferParaId('');
+                            setFormErro('');
+                          }}
+                          className="press text-sm font-medium text-gray-400 transition-colors hover:text-red-600"
+                        >
+                          Desativar
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -221,10 +230,10 @@ export default function EquipePage() {
         title={novoTipo === 'secretaria' ? 'Nova secretária' : 'Novo corretor'}
         footer={
           <>
-            <button type="button" onClick={() => setNovoTipo(null)} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-300">
+            <button type="button" onClick={() => setNovoTipo(null)} className="press rounded-lg px-4 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white">
               Cancelar
             </button>
-            <button type="button" onClick={salvarNovo} disabled={salvando} className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-60">
+            <button type="button" onClick={salvarNovo} disabled={salvando} className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:opacity-60">
               {salvando ? 'Salvando...' : 'Criar'}
             </button>
           </>
@@ -263,10 +272,10 @@ export default function EquipePage() {
         title="Editar usuário"
         footer={
           <>
-            <button type="button" onClick={() => setEditUser(null)} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-300">
+            <button type="button" onClick={() => setEditUser(null)} className="press rounded-lg px-4 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white">
               Cancelar
             </button>
-            <button type="button" onClick={salvarEdicao} disabled={salvando} className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-60">
+            <button type="button" onClick={salvarEdicao} disabled={salvando} className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:opacity-60">
               {salvando ? 'Salvando...' : 'Salvar'}
             </button>
           </>
@@ -316,10 +325,10 @@ export default function EquipePage() {
         title={`Desativar ${desativarUser ? desativarUser.nome || desativarUser.email : ''}`}
         footer={
           <>
-            <button type="button" onClick={() => setDesativarUser(null)} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-300">
+            <button type="button" onClick={() => setDesativarUser(null)} className="press rounded-lg px-4 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white">
               Cancelar
             </button>
-            <button type="button" onClick={confirmarDesativar} disabled={salvando} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60">
+            <button type="button" onClick={confirmarDesativar} disabled={salvando} className="press rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60">
               {salvando ? 'Desativando...' : 'Desativar'}
             </button>
           </>
@@ -342,6 +351,24 @@ export default function EquipePage() {
           {formErro && <p className="text-sm text-red-600">{formErro}</p>}
         </div>
       </Modal>
+    </div>
+  );
+}
+
+function EquipeSkeleton() {
+  return (
+    <div className={`${CARD} overflow-hidden`}>
+      <div className="space-y-3 p-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="flex-1">
+              <div className="shimmer h-3.5 w-40 rounded bg-gray-100 dark:bg-white/10" />
+              <div className="shimmer mt-2 h-3 w-32 rounded bg-gray-100 dark:bg-white/10" />
+            </div>
+            <div className="shimmer h-6 w-16 rounded-full bg-gray-100 dark:bg-white/10" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
