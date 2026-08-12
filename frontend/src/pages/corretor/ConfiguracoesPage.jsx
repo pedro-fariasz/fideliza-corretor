@@ -4,6 +4,11 @@ import { supabase } from '../../services/supabaseClient';
 import { api } from '../../services/api';
 
 const ROLE_LABELS = { corretor: 'Corretor', funcionario: 'Funcionário', admin: 'Administrador' };
+const CARD = 'rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-white/5';
+const MSG_TONE = {
+  ok: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
+  erro: 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300',
+};
 
 // Configurações do corretor: dados da conta + alterar senha + conexão WhatsApp.
 // A senha é trocada direto no Supabase Auth (mesmo cliente usado no login),
@@ -68,14 +73,14 @@ export default function ConfiguracoesPage() {
   }
 
   const inputClass =
-    'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 ' +
-    'focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue ' +
-    'dark:border-white/15 dark:bg-white/5 dark:text-gray-100';
+    'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition-colors ' +
+    'placeholder:text-gray-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40 ' +
+    'dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-gray-500';
 
   return (
     <div className="max-w-xl space-y-6">
       {/* Dados da conta */}
-      <section className="rounded-xl bg-white p-5 shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
+      <section style={{ '--rise-delay': '0ms' }} className={`${CARD} animate-rise p-5`}>
         <h2 className="mb-4 font-heading text-base font-semibold text-brand-navy dark:text-white">
           Dados da conta
         </h2>
@@ -87,19 +92,13 @@ export default function ConfiguracoesPage() {
       </section>
 
       {/* Alterar senha */}
-      <section className="rounded-xl bg-white p-5 shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
+      <section style={{ '--rise-delay': '60ms' }} className={`${CARD} animate-rise p-5`}>
         <h2 className="mb-4 font-heading text-base font-semibold text-brand-navy dark:text-white">
           Alterar senha
         </h2>
 
         {msg && (
-          <p
-            className={`mb-3 rounded-md px-3 py-2 text-sm ${
-              msg.tipo === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-            }`}
-          >
-            {msg.texto}
-          </p>
+          <p className={`mb-3 rounded-lg px-3 py-2 text-sm ${MSG_TONE[msg.tipo]}`}>{msg.texto}</p>
         )}
 
         <form onSubmit={alterarSenha} className="space-y-3">
@@ -132,7 +131,7 @@ export default function ConfiguracoesPage() {
           <button
             type="submit"
             disabled={salvando}
-            className="rounded-md bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-60"
+            className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:opacity-60"
           >
             {salvando ? 'Salvando...' : 'Salvar nova senha'}
           </button>
@@ -140,7 +139,7 @@ export default function ConfiguracoesPage() {
       </section>
 
       {/* Conexão WhatsApp (API Meta) */}
-      <section className="rounded-xl bg-white p-5 shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
+      <section style={{ '--rise-delay': '120ms' }} className={`${CARD} animate-rise p-5`}>
         <h2 className="mb-1 font-heading text-base font-semibold text-brand-navy dark:text-white">
           Conexão WhatsApp (API Meta)
         </h2>
@@ -150,19 +149,13 @@ export default function ConfiguracoesPage() {
         </p>
 
         {tenant && tenant.whatsapp_conectado ? (
-          <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+          <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
             WhatsApp conectado.
           </p>
         ) : (
           <>
             {whatsappMsg && (
-              <p
-                className={`mb-3 rounded-md px-3 py-2 text-sm ${
-                  whatsappMsg.tipo === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                }`}
-              >
-                {whatsappMsg.texto}
-              </p>
+              <p className={`mb-3 rounded-lg px-3 py-2 text-sm ${MSG_TONE[whatsappMsg.tipo]}`}>{whatsappMsg.texto}</p>
             )}
             <form onSubmit={conectarWhatsapp} className="space-y-3">
               <div>
@@ -181,7 +174,7 @@ export default function ConfiguracoesPage() {
               <button
                 type="submit"
                 disabled={conectando}
-                className="rounded-md bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-60"
+                className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:opacity-60"
               >
                 {conectando ? 'Conectando...' : 'Conectar API Oficial'}
               </button>
