@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
 import { useAuth } from '../../hooks/useAuth';
+import { ESTAGIO_LABEL } from '../../utils/crmConstants';
 
 const CARD = 'rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-white/5';
 
@@ -69,8 +70,12 @@ export default function ClientesIndicacaoPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-            {indicados.map((l) => (
-              <tr key={l.id} className="transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5">
+            {indicados.map((l, i) => (
+              <tr
+                key={l.id}
+                style={{ '--rise-delay': `${Math.min(i, 10) * 30}ms` }}
+                className="animate-rise-row transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5"
+              >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2.5">
                     <Avatar nome={l.nome} size="sm" />
@@ -83,7 +88,7 @@ export default function ClientesIndicacaoPage() {
                     {l.valor_estimado ? `R$ ${Number(l.valor_estimado).toLocaleString('pt-BR')}` : '—'}
                   </td>
                 )}
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{l.estagio}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ESTAGIO_LABEL[l.estagio] || l.estagio}</td>
               </tr>
             ))}
           </tbody>

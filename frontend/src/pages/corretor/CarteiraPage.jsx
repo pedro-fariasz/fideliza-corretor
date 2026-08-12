@@ -4,6 +4,7 @@ import Modal from '../../components/Modal';
 import FormField from '../../components/FormField';
 import { formatBRL, formatData } from '../../utils/format';
 import { FORMAS_PAGAMENTO } from '../../utils/crmConstants';
+import { useTabIndicator } from '../../hooks/useTabIndicator';
 
 const COLUNAS = [
   { key: 'vencidas', label: 'Vencidas', cls: 'text-red-600' },
@@ -53,6 +54,7 @@ const AVULSO_VAZIO = {
 
 export default function CarteiraPage() {
   const [vista, setVista] = useState('clientes'); // 'clientes' | 'apolices'
+  const { containerRef: vistaRef, style: vistaIndicatorStyle } = useTabIndicator(vista);
   const [dados, setDados] = useState(null);
   const [metr, setMetr] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -150,7 +152,12 @@ export default function CarteiraPage() {
   }
 
   if (loading) return <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando...</p>;
-  if (error) return <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>;
+  if (error)
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+        {error}
+      </div>
+    );
 
   const c = dados.contadores;
   const apolices = dados.apolices || [];
@@ -160,10 +167,16 @@ export default function CarteiraPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div
+          ref={vistaRef}
           role="tablist"
           aria-label="Visualização da carteira"
-          className="inline-flex gap-1 rounded-xl border border-gray-100 bg-gray-50 p-1 dark:border-white/10 dark:bg-white/5"
+          className="relative inline-flex gap-1 rounded-xl border border-gray-100 bg-gray-50 p-1 dark:border-white/10 dark:bg-white/5"
         >
+          <span
+            className="tab-indicator bg-white shadow-sm dark:bg-white/10"
+            style={vistaIndicatorStyle}
+            aria-hidden="true"
+          />
           {[
             { key: 'clientes', label: 'Clientes' },
             { key: 'apolices', label: 'Apólices' },
@@ -172,11 +185,12 @@ export default function CarteiraPage() {
               key={v.key}
               type="button"
               role="tab"
+              data-tab-key={v.key}
               aria-selected={vista === v.key}
               onClick={() => setVista(v.key)}
-              className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all duration-200 ${
+              className={`press relative whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors duration-200 ${
                 vista === v.key
-                  ? 'bg-white text-brand-blue shadow-sm dark:bg-white/10 dark:text-white'
+                  ? 'text-brand-blue dark:text-white'
                   : 'text-gray-500 hover:text-brand-navy dark:text-gray-400 dark:hover:text-white'
               }`}
             >
@@ -187,7 +201,7 @@ export default function CarteiraPage() {
         <button
           type="button"
           onClick={() => { setAvulso(AVULSO_VAZIO); setFormErro(''); setAvulsoAberto(true); }}
-          className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark"
+          className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark"
         >
           + Negócio avulso
         </button>
@@ -252,10 +266,14 @@ export default function CarteiraPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm dark:divide-white/5">
-              {apolices.map((a) => {
+              {apolices.map((a, i) => {
                 const s = situacao(a);
                 return (
-                  <tr key={a.id}>
+                  <tr
+                    key={a.id}
+                    style={{ '--rise-delay': `${Math.min(i, 10) * 30}ms` }}
+                    className="animate-rise-row transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5"
+                  >
                     <td className="px-4 py-3 font-medium text-brand-navy dark:text-white">{a.cliente ? a.cliente.nome : '—'}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{a.produto ? a.produto.nome : '—'}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{formatData(a.data_vencimento)}</td>
@@ -265,8 +283,8 @@ export default function CarteiraPage() {
                     <td className="px-4 py-3 text-right">
                       {a.status !== 'cancelada' && a.status !== 'renovada' && (
                         <>
-                          <button type="button" onClick={() => renovar(a)} className="mr-3 text-sm font-medium text-brand-blue hover:text-brand-blue-dark">Renovar</button>
-                          <button type="button" onClick={() => { setCancelar(a); setMotivo('preco'); setFormErro(''); }} className="text-sm font-medium text-gray-400 hover:text-red-600">Cancelar</button>
+                          <button type="button" onClick={() => renovar(a)} className="press mr-3 text-sm font-medium text-brand-blue transition-colors hover:text-brand-blue-dark">Renovar</button>
+                          <button type="button" onClick={() => { setCancelar(a); setMotivo('preco'); setFormErro(''); }} className="press text-sm font-medium text-gray-400 transition-colors hover:text-red-600">Cancelar</button>
                         </>
                       )}
                     </td>
@@ -287,8 +305,8 @@ export default function CarteiraPage() {
         title="Cadastrar negócio avulso"
         footer={
           <>
-            <button type="button" onClick={() => setAvulsoAberto(false)} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-300">Cancelar</button>
-            <button type="button" onClick={salvarAvulso} disabled={salvando} className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-60">
+            <button type="button" onClick={() => setAvulsoAberto(false)} className="press rounded-lg px-4 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white">Cancelar</button>
+            <button type="button" onClick={salvarAvulso} disabled={salvando} className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:opacity-60">
               {salvando ? 'Salvando...' : 'Cadastrar'}
             </button>
           </>
@@ -345,8 +363,8 @@ export default function CarteiraPage() {
         title="Cancelar apólice"
         footer={
           <>
-            <button type="button" onClick={() => setCancelar(null)} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-300">Voltar</button>
-            <button type="button" onClick={confirmarCancelar} disabled={salvando} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60">
+            <button type="button" onClick={() => setCancelar(null)} className="press rounded-lg px-4 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white">Voltar</button>
+            <button type="button" onClick={confirmarCancelar} disabled={salvando} className="press rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60">
               {salvando ? 'Cancelando...' : 'Cancelar apólice'}
             </button>
           </>
@@ -388,7 +406,12 @@ function ListaClientesTab() {
     !busca.trim() || (c.nome || '').toLowerCase().includes(busca.trim().toLowerCase())
   );
 
-  if (error) return <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>;
+  if (error)
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+        {error}
+      </div>
+    );
   if (clientes === null) return <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando...</p>;
 
   return (
@@ -399,7 +422,7 @@ function ListaClientesTab() {
         onChange={(e) => setBusca(e.target.value)}
         placeholder="Buscar cliente por nome..."
         aria-label="Buscar cliente"
-        className="w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40 dark:border-white/15 dark:bg-white/5 dark:text-white"
+        className="w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40 dark:border-white/15 dark:bg-white/5 dark:text-white"
       />
 
       {filtrados.length === 0 ? (
@@ -426,8 +449,12 @@ function ListaClientesTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm dark:divide-white/5">
-              {filtrados.map((c) => (
-                <tr key={c.id}>
+              {filtrados.map((c, i) => (
+                <tr
+                  key={c.id}
+                  style={{ '--rise-delay': `${Math.min(i, 10) * 30}ms` }}
+                  className="animate-rise-row transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5"
+                >
                   <td className="px-4 py-3 font-medium text-brand-navy dark:text-white">{c.nome}</td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{c.telefone || c.email || '—'}</td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{c.produto_principal || '—'}</td>

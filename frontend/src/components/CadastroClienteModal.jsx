@@ -98,14 +98,14 @@ export default function CadastroClienteModal({ open, onClose, onUploaded }) {
             <button
               type="button"
               onClick={reset}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-300"
+              className="press rounded-lg px-4 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
             >
               Subir outro PDF
             </button>
             <button
               type="button"
               onClick={irParaManual}
-              className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark"
+              className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark"
             >
               Completar cadastro agora
             </button>
@@ -158,7 +158,7 @@ export default function CadastroClienteModal({ open, onClose, onUploaded }) {
               type="button"
               onClick={enviarPdfs}
               disabled={enviando || (!cotacao && !proposta)}
-              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-50"
+              className="press mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-50"
             >
               {enviando ? (
                 <>
@@ -182,7 +182,7 @@ export default function CadastroClienteModal({ open, onClose, onUploaded }) {
           <button
             type="button"
             onClick={irParaManual}
-            className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 text-left transition-colors hover:border-brand-blue/40 hover:bg-brand-blue/5 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+            className="press flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 text-left transition-colors hover:border-brand-blue/40 hover:bg-brand-blue/5 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-blue/10 text-brand-blue">
               <UserPlus size={18} />

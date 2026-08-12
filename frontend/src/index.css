@@ -159,6 +159,20 @@
   animation-delay: var(--rise-delay, 0ms);
 }
 
+/* Pílula deslizante atrás da aba ativa (useTabIndicator). Anima posição e
+   largura juntas, como um material real se movendo — não um fundo que troca. */
+.tab-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 0.5rem;
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.15s ease-out;
+  will-change: transform, width;
+}
+
 /* Resposta imediata ao toque/clique (princípio "response" — feedback no
    pointer-down, não só no hover). Usar em qualquer alvo tocável. */
 .press {
@@ -244,6 +258,9 @@
   }
   .press {
     transition: none;
+  }
+  .tab-indicator {
+    transition: opacity 0.1s ease-out;
   }
   .press:active {
     transform: none;

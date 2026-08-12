@@ -26,7 +26,7 @@ export default function WhatsAppPlaceholderPage() {
       </p>
       <Link
         to="/configuracoes"
-        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition-all hover:bg-brand-blue-dark"
+        className="press mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition-all hover:bg-brand-blue-dark"
       >
         Ir para Configurações <ArrowRight size={16} />
       </Link>
