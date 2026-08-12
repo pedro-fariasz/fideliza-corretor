@@ -39,7 +39,7 @@ function CardHead({ title, to, linkLabel }) {
       {to && (
         <Link
           to={to}
-          className="group inline-flex items-center gap-1 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
+          className="press group inline-flex items-center gap-1 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
         >
           {linkLabel}
           <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
@@ -59,7 +59,7 @@ const KPI_TONES = {
 function KpiCard({ icon: Icon, tone = 'blue', label, value, delay = 0, children }) {
   return (
     <Card
-      className="animate-rise transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+      className="animate-rise transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.99]"
       style={{ '--rise-delay': `${delay}ms` }}
     >
       <div className="flex items-center justify-between gap-3">
@@ -93,6 +93,12 @@ export default function DashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // As barras (funil, comissão recebida) partem de 0 e crescem até o valor real
+  // assim que os dados chegam — feedback visível, em vez de aparecerem já prontas.
+  // Quem pediu menos movimento já começa com o valor final, sem a animação.
+  const [grown, setGrown] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  );
 
   useEffect(() => {
     let vivo = true;
@@ -112,6 +118,12 @@ export default function DashboardPage() {
       vivo = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!data) return undefined;
+    const id = requestAnimationFrame(() => setGrown(true));
+    return () => cancelAnimationFrame(id);
+  }, [data]);
 
   if (loading) return <DashboardSkeleton />;
   if (error)
@@ -180,8 +192,8 @@ export default function DashboardPage() {
           </div>
           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
             <div
-              className="h-full rounded-full bg-brand-blue transition-[width] duration-700"
-              style={{ width: `${pctRecebida}%` }}
+              className="h-full rounded-full bg-brand-blue transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              style={{ width: `${grown ? pctRecebida : 0}%` }}
             />
           </div>
         </KpiCard>
@@ -204,7 +216,7 @@ export default function DashboardPage() {
             />
           ) : (
             <div className="mt-5 space-y-2.5">
-              {data.funil.map((f) => {
+              {data.funil.map((f, i) => {
                 const pctTotal = totalFunil ? Math.round((f.quantidade / totalFunil) * 100) : 0;
                 const largura = maxFunil ? Math.max(8, Math.round((f.quantidade / maxFunil) * 100)) : 8;
                 return (
@@ -221,8 +233,8 @@ export default function DashboardPage() {
                     {/* Barra centralizada = silhueta de funil por volume */}
                     <div className="flex justify-center">
                       <div
-                        className="h-7 rounded-lg bg-gradient-to-r from-brand-blue to-brand-blue-dark transition-all duration-500"
-                        style={{ width: `${largura}%` }}
+                        className="h-7 rounded-lg bg-gradient-to-r from-brand-blue to-brand-blue-dark transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                        style={{ width: `${grown ? largura : 8}%`, transitionDelay: `${i * 45}ms` }}
                         title={`${f.quantidade} lead(s)`}
                       />
                     </div>

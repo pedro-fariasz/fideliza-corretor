@@ -238,6 +238,10 @@
   .mobile-menu {
     transition: opacity 0.15s ease-out;
   }
+  .drawer-panel {
+    transition: opacity 0.15s ease-out !important;
+    transform: none !important;
+  }
 }
 
 /* Traduzências ficam sólidas para quem pediu menos transparência. */
