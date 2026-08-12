@@ -10,6 +10,8 @@ const inputClasses =
 
 // Modal de login sobre a landing (mantém o formulário sempre acessível, sem sair
 // da página). As telas de auth são SEMPRE claras — aqui não há classe dark:.
+const CLOSE_ANIMATION_MS = 180;
+
 export default function LoginModal({ open, onClose }) {
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -18,8 +20,29 @@ export default function LoginModal({ open, onClose }) {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Mantém o modal montado durante o fechamento para que ele saia pelo
+  // mesmo caminho de animação por onde entrou, em vez de sumir sem transição.
+  const [mounted, setMounted] = useState(open);
+  const [closing, setClosing] = useState(false);
+
   useEffect(() => {
-    if (!open) return undefined;
+    if (open) {
+      setMounted(true);
+      setClosing(false);
+    } else if (mounted) {
+      setClosing(true);
+      const timer = setTimeout(() => {
+        setMounted(false);
+        setClosing(false);
+      }, CLOSE_ANIMATION_MS);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => {
+    if (!mounted) return undefined;
     const onKey = (e) => {
       if (e.key === 'Escape') onClose();
     };
@@ -29,9 +52,9 @@ export default function LoginModal({ open, onClose }) {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
     };
-  }, [open, onClose]);
+  }, [mounted, onClose]);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -64,15 +87,17 @@ export default function LoginModal({ open, onClose }) {
         type="button"
         aria-label="Fechar"
         onClick={onClose}
-        className="absolute inset-0 bg-brand-navy/50 backdrop-blur-sm"
+        className={`modal-backdrop absolute inset-0 bg-brand-navy/50 backdrop-blur-sm ${closing ? 'is-closing' : ''}`}
       />
 
-      <div className="reveal is-visible relative w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl">
+      <div
+        className={`modal-panel relative w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl ${closing ? 'is-closing' : ''}`}
+      >
         <button
           type="button"
           onClick={onClose}
           aria-label="Fechar"
-          className="absolute right-4 top-4 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          className="press absolute right-4 top-4 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
         >
           <X size={18} />
         </button>
@@ -123,7 +148,7 @@ export default function LoginModal({ open, onClose }) {
           <button
             type="submit"
             disabled={submitting}
-            className="cta-shine flex w-full items-center justify-center gap-2 rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
+            className="cta-shine press flex w-full items-center justify-center gap-2 rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? 'Entrando...' : 'Entrar'}
             {!submitting && <ArrowRight size={16} aria-hidden="true" />}

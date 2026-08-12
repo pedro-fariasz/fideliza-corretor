@@ -24,9 +24,9 @@ export default function LandingNavbar({ onEntrar }) {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+      className={`landing-navbar fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
         scrolled || menuOpen
-          ? 'border-b border-gray-100 bg-white/90 shadow-sm backdrop-blur'
+          ? 'border-b border-gray-100 bg-white/80 shadow-sm backdrop-blur-xl backdrop-saturate-150'
           : 'border-b border-transparent bg-transparent'
       }`}
     >
@@ -51,13 +51,13 @@ export default function LandingNavbar({ onEntrar }) {
           <button
             type="button"
             onClick={onEntrar}
-            className="text-sm font-semibold text-brand-navy transition-colors hover:text-brand-blue"
+            className="press text-sm font-semibold text-brand-navy transition-colors hover:text-brand-blue"
           >
             Entrar
           </button>
           <Link
             to="/cadastro"
-            className="cta-shine inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-blue-dark hover:shadow-md"
+            className="cta-shine press inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-blue-dark hover:shadow-md"
           >
             Começar agora
             <ArrowRight size={15} aria-hidden="true" />
@@ -66,7 +66,7 @@ export default function LandingNavbar({ onEntrar }) {
 
         <button
           type="button"
-          className="rounded-lg p-2 text-brand-navy md:hidden"
+          className="press rounded-lg p-2 text-brand-navy md:hidden"
           onClick={() => setMenuOpen((v) => !v)}
           aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
           aria-expanded={menuOpen}
@@ -75,43 +75,48 @@ export default function LandingNavbar({ onEntrar }) {
         </button>
       </nav>
 
-      {/* Menu mobile */}
-      {menuOpen && (
-        <div className="border-t border-gray-100 bg-white px-6 py-4 md:hidden">
-          <div className="flex flex-col gap-1">
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-2 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+      {/* Menu mobile — altura anima via grid-template-rows, sem pop instantâneo. */}
+      <div
+        className={`mobile-menu bg-white md:hidden ${menuOpen ? 'is-open border-t border-gray-100' : ''}`}
+        inert={!menuOpen || undefined}
+      >
+        <div>
+          <div className="px-6 py-4">
+            <div className="flex flex-col gap-1">
+              {NAV_LINKS.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="press rounded-lg px-2 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onEntrar();
+                }}
+                className="press rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-brand-navy hover:bg-gray-50"
               >
-                {link.label}
-              </a>
-            ))}
-          </div>
-          <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3">
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onEntrar();
-              }}
-              className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-brand-navy hover:bg-gray-50"
-            >
-              Entrar
-            </button>
-            <Link
-              to="/cadastro"
-              onClick={() => setMenuOpen(false)}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-blue-dark"
-            >
-              Começar agora
-              <ArrowRight size={15} aria-hidden="true" />
-            </Link>
+                Entrar
+              </button>
+              <Link
+                to="/cadastro"
+                onClick={() => setMenuOpen(false)}
+                className="press inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-blue-dark"
+              >
+                Começar agora
+                <ArrowRight size={15} aria-hidden="true" />
+              </Link>
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </header>
   );
 }

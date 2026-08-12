@@ -101,7 +101,7 @@ function Hero({ onEntrar }) {
           <Reveal
             as="h1"
             delay={80}
-            className="mt-5 font-heading text-4xl font-extrabold leading-[1.08] tracking-tight text-brand-navy sm:text-5xl lg:text-6xl"
+            className="mt-5 font-heading text-4xl font-extrabold leading-[1.05] tracking-[-0.02em] text-brand-navy sm:text-5xl sm:tracking-[-0.025em] lg:text-6xl lg:tracking-[-0.03em]"
           >
             Do primeiro lead à{' '}
             <span className="relative whitespace-nowrap text-brand-blue">
@@ -123,14 +123,14 @@ function Hero({ onEntrar }) {
           <Reveal delay={240} className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               to="/cadastro"
-              className="cta-shine inline-flex items-center justify-center gap-2 rounded-xl bg-brand-blue px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition-all hover:bg-brand-blue-dark hover:shadow-xl hover:shadow-brand-blue/30"
+              className="cta-shine press inline-flex items-center justify-center gap-2 rounded-xl bg-brand-blue px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition-all hover:bg-brand-blue-dark hover:shadow-xl hover:shadow-brand-blue/30"
             >
               Começar grátis
               <ArrowRight size={17} aria-hidden="true" />
             </Link>
             <a
               href="#funcionalidades"
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-6 py-3.5 text-sm font-semibold text-brand-navy transition-all hover:border-brand-blue hover:text-brand-blue"
+              className="press inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-6 py-3.5 text-sm font-semibold text-brand-navy transition-all hover:border-brand-blue hover:text-brand-blue"
             >
               Conhecer recursos
             </a>
@@ -188,7 +188,7 @@ function Features() {
               <Reveal
                 key={feature.title}
                 delay={(i % 4) * 90}
-                className="group rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand-blue/30 hover:shadow-xl hover:shadow-brand-navy/5"
+                className="group rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-brand-blue/30 hover:shadow-xl hover:shadow-brand-navy/5 active:translate-y-0 active:scale-[0.98] active:shadow-sm"
               >
                 <span
                   className={`flex h-12 w-12 items-center justify-center rounded-xl ${feature.color} transition-transform duration-300 group-hover:scale-110`}
@@ -274,7 +274,7 @@ function Steps() {
               <Reveal
                 key={step.n}
                 delay={i * 120}
-                className="relative rounded-2xl border border-gray-100 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-navy/5"
+                className="relative rounded-2xl border border-gray-100 bg-white p-7 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-navy/5 active:translate-y-0 active:scale-[0.98] active:shadow-sm"
               >
                 <div className="flex items-center justify-between">
                   <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-blue text-white">
@@ -371,7 +371,7 @@ function Security() {
           <Reveal delay={240} className="mt-8">
             <Link
               to="/cadastro"
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-navy px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-navy/90"
+              className="press inline-flex items-center gap-2 rounded-xl bg-brand-navy px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-navy/90"
             >
               Conhecer mais
               <ArrowRight size={16} aria-hidden="true" />
@@ -467,7 +467,7 @@ function Pricing() {
               </ul>
               <Link
                 to="/cadastro"
-                className="cta-shine mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-blue px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition-all hover:bg-brand-blue-dark"
+                className="cta-shine press mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-blue px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition-all hover:bg-brand-blue-dark"
               >
                 Criar conta grátis
                 <ArrowRight size={16} aria-hidden="true" />
@@ -504,14 +504,14 @@ function FinalCta() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 to="/cadastro"
-                className="cta-shine inline-flex items-center justify-center gap-2 rounded-xl bg-brand-blue px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-blue/30 transition-all hover:bg-brand-blue-dark"
+                className="cta-shine press inline-flex items-center justify-center gap-2 rounded-xl bg-brand-blue px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-blue/30 transition-all hover:bg-brand-blue-dark"
               >
                 Começar grátis
                 <ArrowRight size={17} aria-hidden="true" />
               </Link>
               <a
                 href="#funcionalidades"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                className="press inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
               >
                 Rever recursos
               </a>
