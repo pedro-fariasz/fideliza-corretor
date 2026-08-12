@@ -78,7 +78,7 @@ export default function LandingNavbar({ onEntrar }) {
       {/* Menu mobile — altura anima via grid-template-rows, sem pop instantâneo. */}
       <div
         className={`mobile-menu bg-white md:hidden ${menuOpen ? 'is-open border-t border-gray-100' : ''}`}
-        inert={!menuOpen || undefined}
+        {...(!menuOpen ? { inert: '' } : {})}
       >
         <div>
           <div className="px-6 py-4">
