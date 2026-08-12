@@ -17,6 +17,7 @@ import {
 import { api } from '../../services/api';
 import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
+import { useTabIndicator } from '../../hooks/useTabIndicator';
 
 // =============================================================================
 // Fidelização — esteira automática de relacionamento com o cliente já
@@ -96,6 +97,7 @@ function NpsBadge({ nps }) {
 
 export default function PosVendasPage() {
   const [aba, setAba] = useState('pipeline');
+  const { containerRef: abasRef, style: abaIndicatorStyle } = useTabIndicator(aba);
 
   return (
     <div className="space-y-6">
@@ -118,10 +120,16 @@ export default function PosVendasPage() {
 
       {/* Abas — pill control com ícones */}
       <div
+        ref={abasRef}
         role="tablist"
         aria-label="Seções de pós-vendas"
-        className="inline-flex max-w-full gap-1 overflow-x-auto rounded-xl border border-gray-100 bg-gray-50 p-1 dark:border-white/10 dark:bg-white/5"
+        className="relative inline-flex max-w-full gap-1 overflow-x-auto rounded-xl border border-gray-100 bg-gray-50 p-1 dark:border-white/10 dark:bg-white/5"
       >
+        <span
+          className="tab-indicator bg-white shadow-sm dark:bg-white/10"
+          style={abaIndicatorStyle}
+          aria-hidden="true"
+        />
         {ABAS.map((a) => {
           const Icon = a.icon;
           const active = aba === a.key;
@@ -130,12 +138,13 @@ export default function PosVendasPage() {
               key={a.key}
               type="button"
               role="tab"
+              data-tab-key={a.key}
               aria-selected={active}
               onClick={() => setAba(a.key)}
-              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 ${
+              className={`press relative inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-medium transition-colors duration-200 ${
                 active
-                  ? 'bg-white text-brand-blue shadow-sm dark:bg-white/10 dark:text-white'
-                  : 'text-gray-500 hover:bg-white/60 hover:text-brand-navy dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'
+                  ? 'text-brand-blue dark:text-white'
+                  : 'text-gray-500 hover:text-brand-navy dark:text-gray-400 dark:hover:text-white'
               }`}
             >
               <Icon size={16} className={active ? '' : 'opacity-70'} />
@@ -238,8 +247,8 @@ function PipelineTab() {
 
   return (
     <div className="flex gap-4 overflow-x-auto pb-2">
-      {colunas.map((col) => (
-        <div key={col.chave} className="w-72 shrink-0">
+      {colunas.map((col, colIndex) => (
+        <div key={col.chave} style={{ '--rise-delay': `${colIndex * 60}ms` }} className="animate-rise w-72 shrink-0">
           <div className="mb-3 flex items-center justify-between px-1">
             <h3 className="font-heading text-sm font-semibold text-brand-navy dark:text-white">{col.nome}</h3>
             <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-white/10 dark:text-gray-300">
@@ -250,7 +259,7 @@ function PipelineTab() {
             {(cards[col.chave] || []).map((c) => (
               <div
                 key={c.id}
-                className={`${CARD} p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}
+                className={`${CARD} p-4 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.99]`}
               >
                 <div className="flex items-start gap-3">
                   <Avatar nome={c.cliente_nome} size="md" />
@@ -279,7 +288,7 @@ function PipelineTab() {
                   <button
                     type="button"
                     onClick={() => abrirWhatsApp(c.id, c.etapa_chave)}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25"
+                    className="press inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25"
                   >
                     <MessageCircle size={13} /> WhatsApp
                   </button>
@@ -287,7 +296,7 @@ function PipelineTab() {
                     <button
                       type="button"
                       onClick={() => marcarFeito(c.id)}
-                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-brand-navy dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-white"
+                      className="press inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-brand-navy dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-white"
                     >
                       <CheckCircle2 size={13} /> Marcar feito
                     </button>
@@ -337,10 +346,13 @@ function NextSteps() {
 // =============================================================================
 // Aba Lista
 // =============================================================================
+const CROSS_CLOSE_MS = 180;
+
 function ListaTab() {
   const [linhas, setLinhas] = useState(null);
   const [error, setError] = useState('');
   const [cross, setCross] = useState(null); // { cliente, itens }
+  const [crossClosing, setCrossClosing] = useState(false);
 
   useEffect(() => {
     api.posvendasLista().then(setLinhas).catch((e) => setError(e.message || 'Erro ao carregar.'));
@@ -349,10 +361,19 @@ function ListaTab() {
   async function verCrossSell(linha) {
     try {
       const itens = await api.posvendasCrossSell(linha.id);
+      setCrossClosing(false);
       setCross({ cliente: linha.cliente_nome, itens });
     } catch (err) {
       alert(err.message || 'Erro ao buscar cross-sell.');
     }
+  }
+
+  function fecharCross() {
+    setCrossClosing(true);
+    window.setTimeout(() => {
+      setCross(null);
+      setCrossClosing(false);
+    }, CROSS_CLOSE_MS);
   }
 
   if (error) return <ErrorBox>{error}</ErrorBox>;
@@ -387,8 +408,12 @@ function ListaTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-              {linhas.map((l) => (
-                <tr key={l.id} className="transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5">
+              {linhas.map((l, i) => (
+                <tr
+                  key={l.id}
+                  style={{ '--rise-delay': `${Math.min(i, 10) * 30}ms` }}
+                  className="animate-rise-row transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5"
+                >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <Avatar nome={l.cliente_nome} size="sm" />
@@ -417,7 +442,7 @@ function ListaTab() {
                     <button
                       type="button"
                       onClick={() => verCrossSell(l)}
-                      className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
+                      className="press inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
                     >
                       <Sparkles size={14} /> Cross-sell
                     </button>
@@ -431,11 +456,11 @@ function ListaTab() {
 
       {cross && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-brand-navy/50 p-4 backdrop-blur-sm"
-          onMouseDown={() => setCross(null)}
+          className={`modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-brand-navy/50 p-4 backdrop-blur-sm ${crossClosing ? 'is-closing' : ''}`}
+          onMouseDown={fecharCross}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-brand-navy"
+            className={`modal-panel w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-brand-navy ${crossClosing ? 'is-closing' : ''}`}
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
@@ -449,9 +474,9 @@ function ListaTab() {
               </div>
               <button
                 type="button"
-                onClick={() => setCross(null)}
+                onClick={fecharCross}
                 aria-label="Fechar"
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/10"
+                className="press rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/10"
               >
                 <X size={18} />
               </button>
@@ -483,8 +508,8 @@ function ListaTab() {
             <div className="mt-5 flex justify-end">
               <button
                 type="button"
-                onClick={() => setCross(null)}
-                className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                onClick={fecharCross}
+                className="press rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
               >
                 Fechar
               </button>
@@ -587,7 +612,7 @@ function FluxosTab() {
         <button
           type="button"
           onClick={restaurar}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition-colors hover:text-brand-navy dark:text-gray-400 dark:hover:text-white"
+          className="press inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition-colors hover:text-brand-navy dark:text-gray-400 dark:hover:text-white"
         >
           <RotateCcw size={14} /> Restaurar padrão da categoria
         </button>
@@ -648,7 +673,7 @@ function FluxosTab() {
                   type="button"
                   onClick={() => salvarEtapa(e)}
                   aria-label="Salvar etapa"
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark"
+                  className="press inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark"
                 >
                   <Save size={14} /> Salvar
                 </button>
@@ -752,14 +777,14 @@ function MensagensTab() {
                 <button
                   type="button"
                   onClick={() => salvar(m)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark"
+                  className="press inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark"
                 >
                   <Save size={14} /> Salvar
                 </button>
                 <button
                   type="button"
                   onClick={() => redefinir(m)}
-                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-brand-navy dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-white"
+                  className="press inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-brand-navy dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-white"
                 >
                   <RotateCcw size={14} /> Redefinir
                 </button>

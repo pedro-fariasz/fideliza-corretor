@@ -5,8 +5,10 @@ import VendaFormModal from '../../components/VendaFormModal';
 import { ESTAGIOS } from '../../utils/crmConstants';
 import { formatBRL } from '../../utils/format';
 
+const CARD = 'rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-white/5';
+
 // Card do lead. Mostra nome, interesse, valor e dias sem contato.
-function LeadCard({ lead, onDragStart }) {
+function LeadCard({ lead, dragging, onDragStart, onDragEnd }) {
   const dias = lead.ultimo_contato_em
     ? Math.floor((Date.now() - new Date(lead.ultimo_contato_em).getTime()) / 86400000)
     : null;
@@ -16,7 +18,10 @@ function LeadCard({ lead, onDragStart }) {
     <div
       draggable
       onDragStart={(e) => onDragStart(e, lead)}
-      className="cursor-grab rounded-lg border border-gray-200 bg-white p-3 shadow-sm active:cursor-grabbing dark:border-white/10 dark:bg-white/5"
+      onDragEnd={onDragEnd}
+      className={`${CARD} cursor-grab p-3 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] active:cursor-grabbing ${
+        dragging ? 'rotate-1 scale-105 opacity-60 shadow-lg' : 'hover:-translate-y-0.5 hover:shadow-md'
+      }`}
     >
       <p className="truncate text-sm font-medium text-brand-navy dark:text-white">{lead.nome}</p>
       <div className="mt-1 flex items-center justify-between text-xs">
@@ -37,6 +42,7 @@ export default function FunilPage() {
   const [novoAberto, setNovoAberto] = useState(false);
   const [vendaLead, setVendaLead] = useState(null);
   const [dragId, setDragId] = useState(null);
+  const [alvo, setAlvo] = useState(null);
 
   async function carregar() {
     setLoading(true);
@@ -63,6 +69,7 @@ export default function FunilPage() {
   async function onDrop(estagioDestino) {
     const lead = leads.find((l) => l.id === dragId);
     setDragId(null);
+    setAlvo(null);
     if (!lead || lead.estagio === estagioDestino) return;
 
     // Soltar em "Venda Concluída" abre o modal de venda (a venda é que move o lead).
@@ -91,39 +98,61 @@ export default function FunilPage() {
         <button
           type="button"
           onClick={() => setNovoAberto(true)}
-          className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark"
+          className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark"
         >
           + Novo lead
         </button>
       </div>
 
-      {error && <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+          {error}
+        </div>
+      )}
 
       {loading ? (
         <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando...</p>
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-2">
-          {ESTAGIOS.map((col) => {
+          {ESTAGIOS.map((col, colIndex) => {
             const items = porEstagio(col.value);
             return (
               <div
                 key={col.value}
-                onDragOver={(e) => e.preventDefault()}
+                style={{ '--rise-delay': `${colIndex * 60}ms` }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (alvo !== col.value) setAlvo(col.value);
+                }}
+                onDragLeave={() => setAlvo((a) => (a === col.value ? null : a))}
                 onDrop={() => onDrop(col.value)}
-                className="flex w-64 shrink-0 flex-col rounded-xl bg-gray-50 p-2 dark:bg-white/5"
+                className={`animate-rise flex w-64 shrink-0 flex-col rounded-2xl border p-2 transition-colors duration-200 ${
+                  alvo === col.value
+                    ? 'border-brand-blue/50 bg-brand-blue/5'
+                    : 'border-gray-100 bg-gray-50/70 dark:border-white/10 dark:bg-white/5'
+                }`}
               >
                 <div className="flex items-center justify-between px-2 py-2">
                   <span className="text-sm font-semibold text-brand-navy dark:text-white">{col.label}</span>
-                  <span className="rounded-full bg-gray-200 px-2 text-xs text-gray-600 dark:bg-white/10 dark:text-gray-300">
+                  <span className="rounded-full bg-white px-2 text-xs font-medium text-gray-500 shadow-sm dark:bg-white/10 dark:text-gray-300">
                     {items.length}
                   </span>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex min-h-[60px] flex-col gap-2">
                   {items.map((lead) => (
-                    <LeadCard key={lead.id} lead={lead} onDragStart={onDragStart} />
+                    <LeadCard
+                      key={lead.id}
+                      lead={lead}
+                      dragging={dragId === lead.id}
+                      onDragStart={onDragStart}
+                      onDragEnd={() => {
+                        setDragId(null);
+                        setAlvo(null);
+                      }}
+                    />
                   ))}
                   {items.length === 0 && (
-                    <p className="px-2 py-6 text-center text-xs text-gray-400">Vazio</p>
+                    <p className="px-2 py-6 text-center text-xs text-gray-300 dark:text-gray-600">Vazio</p>
                   )}
                 </div>
               </div>

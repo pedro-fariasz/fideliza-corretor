@@ -32,14 +32,18 @@ export default function PendenciasPage() {
     return <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando...</p>;
   }
   if (error) {
-    return <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>;
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+        {error}
+      </div>
+    );
   }
 
   const { urgente, atencao } = pendenciasPorUrgencia(clientes);
 
   if (urgente.length === 0 && atencao.length === 0) {
     return (
-      <div className="rounded-lg bg-white p-10 text-center text-gray-600 shadow-sm dark:bg-white/5 dark:text-gray-300 dark:ring-1 dark:ring-white/10">
+      <div className="animate-rise rounded-2xl border border-gray-100 bg-white p-10 text-center text-gray-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
         Nenhuma pendência. Carteira em dia.
       </div>
     );
@@ -78,7 +82,8 @@ function Grupo({ titulo, cor, descricao, itens }) {
         {itens.map((p, i) => (
           <li
             key={`${p.cliente.id}-${p.tipo}-${i}`}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white px-4 py-3 shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10"
+            style={{ '--rise-delay': `${Math.min(i, 10) * 40}ms` }}
+            className="animate-rise flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/5"
           >
             <div className="min-w-0">
               <p className="truncate font-medium text-brand-navy dark:text-white">

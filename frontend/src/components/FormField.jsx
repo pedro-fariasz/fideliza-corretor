@@ -1,7 +1,8 @@
 // Campo de formulário genérico: label + input/select + erro de validação.
 const inputClasses =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm ' +
-  'focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue';
+  'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm ' +
+  'transition-colors placeholder:text-gray-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40 ' +
+  'dark:border-white/15 dark:bg-white/5 dark:text-white dark:placeholder:text-gray-500';
 
 export default function FormField({
   label,
@@ -21,9 +22,9 @@ export default function FormField({
 
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-sm font-medium text-gray-700">
+      <label htmlFor={id} className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
         {label}
-        {required && <span className="ml-0.5 text-red-600">*</span>}
+        {required && <span className="ml-0.5 text-red-600 dark:text-red-400">*</span>}
       </label>
 
       {options ? (
@@ -60,7 +61,7 @@ export default function FormField({
         />
       )}
 
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 }

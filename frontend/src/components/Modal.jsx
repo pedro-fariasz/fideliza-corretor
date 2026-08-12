@@ -1,26 +1,53 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+const CLOSE_ANIMATION_MS = 180;
 
 // Modal simples e acessível. Fundo claro sempre (regra de identidade);
 // no dark mode o painel usa a superfície escura padrão do app.
+// Materializa ao abrir (blur + scale) e sai pelo mesmo caminho ao fechar —
+// fica montado durante a saída para a animação terminar antes de sumir.
 export default function Modal({ open, onClose, title, children, footer }) {
+  const [mounted, setMounted] = useState(open);
+  const [closing, setClosing] = useState(false);
+
   useEffect(() => {
-    if (!open) return undefined;
+    if (open) {
+      setMounted(true);
+      setClosing(false);
+    } else if (mounted) {
+      setClosing(true);
+      const timer = setTimeout(() => {
+        setMounted(false);
+        setClosing(false);
+      }, CLOSE_ANIMATION_MS);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => {
+    if (!mounted) return undefined;
     const onKey = (e) => {
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [mounted, onClose]);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:items-center"
+      className={`modal-backdrop fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:items-center ${closing ? 'is-closing' : ''}`}
       onMouseDown={onClose}
+      role="presentation"
     >
       <div
-        className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-brand-navy dark:ring-1 dark:ring-white/10"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className={`modal-panel w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-brand-navy dark:ring-1 dark:ring-white/10 ${closing ? 'is-closing' : ''}`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -30,7 +57,7 @@ export default function Modal({ open, onClose, title, children, footer }) {
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-700 dark:hover:text-white"
+            className="press rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
             aria-label="Fechar"
           >
             ✕

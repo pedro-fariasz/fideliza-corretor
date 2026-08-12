@@ -4,7 +4,7 @@
 // nem puxar escopo de fase futura (ver CLAUDE.md — não pular fases).
 export default function CampanhasPage() {
   return (
-    <div className="rounded-lg bg-white p-8 text-center shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
+    <div className="animate-rise rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
       <p className="font-heading text-lg font-semibold text-brand-navy dark:text-white">
         Histórico de campanhas
       </p>

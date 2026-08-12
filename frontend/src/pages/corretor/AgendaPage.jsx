@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
+import { CalendarClock, X } from 'lucide-react';
 import { api } from '../../services/api';
 import Modal from '../../components/Modal';
 import FormField from '../../components/FormField';
+import EmptyState from '../../components/EmptyState';
 import { formatDataHora } from '../../utils/format';
 
 const VAZIO = { titulo: '', data_inicio: '', data_fim: '', descricao: '' };
+const CARD = 'rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-white/5';
 
 export default function AgendaPage() {
   const [compromissos, setCompromissos] = useState([]);
@@ -77,28 +80,38 @@ export default function AgendaPage() {
             setFormErro('');
             setAberto(true);
           }}
-          className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark"
+          className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark"
         >
           + Novo compromisso
         </button>
       </div>
 
       {loading ? (
-        <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando...</p>
+        <AgendaSkeleton />
       ) : error ? (
-        <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+          {error}
+        </div>
       ) : compromissos.length === 0 ? (
-        <div className="rounded-xl bg-white p-8 text-center shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
-          <p className="text-gray-600 dark:text-gray-300">Nenhum compromisso agendado.</p>
+        <div className={`${CARD} p-8`}>
+          <EmptyState
+            icon={CalendarClock}
+            title="Nenhum compromisso agendado"
+            description="Marque seu próximo follow-up ou reunião."
+          />
         </div>
       ) : (
-        <ul className="space-y-2">
-          {compromissos.map((c) => (
+        <ul className="space-y-2.5">
+          {compromissos.map((c, i) => (
             <li
               key={c.id}
-              className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10"
+              style={{ '--rise-delay': `${Math.min(i, 10) * 40}ms` }}
+              className={`${CARD} animate-rise flex items-center gap-4 p-4 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-md`}
             >
-              <div className="min-w-0">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue">
+                <CalendarClock size={18} aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-brand-navy dark:text-white">{c.titulo}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {formatDataHora(c.data_inicio)} → {formatDataHora(c.data_fim)}
@@ -108,9 +121,11 @@ export default function AgendaPage() {
               <button
                 type="button"
                 onClick={() => remover(c.id)}
-                className="shrink-0 text-sm text-gray-400 hover:text-red-600"
+                aria-label={`Remover ${c.titulo}`}
+                title="Remover"
+                className="press inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10"
               >
-                Remover
+                <X size={16} />
               </button>
             </li>
           ))}
@@ -126,7 +141,7 @@ export default function AgendaPage() {
             <button
               type="button"
               onClick={() => setAberto(false)}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-300"
+              className="press rounded-lg px-4 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
             >
               Cancelar
             </button>
@@ -134,7 +149,7 @@ export default function AgendaPage() {
               type="button"
               onClick={salvar}
               disabled={salvando}
-              className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-60"
+              className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:opacity-60"
             >
               {salvando ? 'Salvando...' : 'Salvar'}
             </button>
@@ -152,5 +167,21 @@ export default function AgendaPage() {
         </div>
       </Modal>
     </div>
+  );
+}
+
+function AgendaSkeleton() {
+  return (
+    <ul className="space-y-2.5">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <li key={i} className={`${CARD} flex items-center gap-4 p-4`}>
+          <div className="shimmer h-10 w-10 shrink-0 rounded-xl bg-gray-100 dark:bg-white/10" />
+          <div className="flex-1">
+            <div className="shimmer h-3.5 w-40 rounded bg-gray-100 dark:bg-white/10" />
+            <div className="shimmer mt-2 h-3 w-56 rounded bg-gray-100 dark:bg-white/10" />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

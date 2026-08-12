@@ -34,8 +34,12 @@ export default function KanbanBoard({ columns, items, renderCard, getKey }) {
 
   return (
     <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${lg}`}>
-      {columns.map((col) => (
-        <div key={col.id} className="flex flex-col">
+      {columns.map((col, colIndex) => (
+        <div
+          key={col.id}
+          style={{ '--rise-delay': `${colIndex * 60}ms` }}
+          className="animate-rise flex flex-col"
+        >
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-heading text-sm font-semibold text-brand-navy dark:text-white">
               {col.titulo}
@@ -44,11 +48,15 @@ export default function KanbanBoard({ columns, items, renderCard, getKey }) {
               {baldes[col.id].length}
             </span>
           </div>
-          <div className="flex flex-1 flex-col gap-2 rounded-lg bg-gray-50 p-2 dark:bg-white/[0.03]">
+          <div className="flex flex-1 flex-col gap-2 rounded-xl bg-gray-50 p-2 dark:bg-white/[0.03]">
             {baldes[col.id].length === 0 ? (
-              <p className="px-2 py-6 text-center text-xs text-gray-400">Vazio</p>
+              <p className="px-2 py-6 text-center text-xs text-gray-300 dark:text-gray-600">Vazio</p>
             ) : (
-              baldes[col.id].map((item) => <div key={getKey(item)}>{renderCard(item)}</div>)
+              baldes[col.id].map((item, i) => (
+                <div key={getKey(item)} style={{ '--rise-delay': `${Math.min(i, 8) * 40}ms` }} className="animate-rise">
+                  {renderCard(item)}
+                </div>
+              ))
             )}
           </div>
         </div>

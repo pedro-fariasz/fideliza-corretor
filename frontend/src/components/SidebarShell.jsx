@@ -15,10 +15,31 @@ import Avatar from './Avatar';
 //   - <  md: sidebar vira drawer sobreposto, aberto por botão hambúrguer no header.
 // Largura fluida (sem px fixo nos wrappers): a coluna de conteúdo usa flex-1.
 // =============================================================================
+const DRAWER_CLOSE_MS = 220;
+
 export default function SidebarShell({ items, badge = null, title, children }) {
   const { profile, signOut } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // O drawer fica montado durante o fechamento para sair pelo mesmo caminho
+  // (deslizar para a esquerda) por onde entrou, em vez de sumir sem transição.
+  const [drawerMounted, setDrawerMounted] = useState(false);
+  const [drawerClosing, setDrawerClosing] = useState(false);
   const nome = profile ? profile.nome || profile.email : '';
+
+  function openDrawer() {
+    setDrawerMounted(true);
+    setDrawerClosing(false);
+    setDrawerOpen(true);
+  }
+
+  function closeDrawer() {
+    setDrawerOpen(false);
+    setDrawerClosing(true);
+    window.setTimeout(() => {
+      setDrawerMounted(false);
+      setDrawerClosing(false);
+    }, DRAWER_CLOSE_MS);
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-gray-100 dark:bg-brand-navy">
@@ -28,19 +49,19 @@ export default function SidebarShell({ items, badge = null, title, children }) {
       </aside>
 
       {/* Drawer (mobile/tablet estreito) */}
-      {drawerOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
+      {drawerMounted && (
+        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true">
           <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setDrawerOpen(false)}
+            className="absolute inset-0 bg-black/40 transition-opacity duration-200 ease-out"
+            style={{ opacity: drawerOpen ? 1 : 0 }}
+            onClick={closeDrawer}
             aria-hidden="true"
           />
-          <aside className="absolute inset-y-0 left-0 flex w-64 max-w-[80%] flex-col bg-white shadow-xl dark:bg-brand-navy">
-            <SidebarContent
-              items={items}
-              badge={badge}
-              onNavigate={() => setDrawerOpen(false)}
-            />
+          <aside
+            className="drawer-panel absolute inset-y-0 left-0 flex w-64 max-w-[80%] flex-col bg-white shadow-xl transition-transform duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] dark:bg-brand-navy"
+            style={{ transform: drawerOpen ? 'translateX(0)' : 'translateX(-100%)' }}
+          >
+            <SidebarContent items={items} badge={badge} onNavigate={closeDrawer} />
           </aside>
         </div>
       )}
@@ -51,9 +72,9 @@ export default function SidebarShell({ items, badge = null, title, children }) {
           <div className="flex min-w-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => setDrawerOpen(true)}
+              onClick={openDrawer}
               aria-label="Abrir menu"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 md:hidden dark:border-white/15 dark:text-gray-300 dark:hover:bg-white/10"
+              className="press inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 md:hidden dark:border-white/15 dark:text-gray-300 dark:hover:bg-white/10"
             >
               <MenuIcon />
             </button>
@@ -73,7 +94,7 @@ export default function SidebarShell({ items, badge = null, title, children }) {
                 onClick={signOut}
                 aria-label="Sair"
                 title="Sair"
-                className="ml-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
+                className="press ml-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
               >
                 <LogOut size={15} />
               </button>
@@ -83,7 +104,7 @@ export default function SidebarShell({ items, badge = null, title, children }) {
               type="button"
               onClick={signOut}
               aria-label="Sair"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 sm:hidden dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+              className="press inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 sm:hidden dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
             >
               <LogOut size={17} />
             </button>
@@ -126,7 +147,7 @@ function SidebarContent({ items, badge, onNavigate }) {
               end={item.end}
               onClick={onNavigate}
               className={({ isActive }) =>
-                `${linkBase} ${isActive ? linkActive : linkIdle}`
+                `press ${linkBase} ${isActive ? linkActive : linkIdle}`
               }
             >
               {Icon &&

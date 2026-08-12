@@ -13,8 +13,10 @@ const PERIODOS = [
   { value: '6m', label: '6 meses' }, { value: '1a', label: '1 ano' }, { value: 'tudo', label: 'Todo o período' },
 ];
 const COR = { azul: '#1E5EFF', ambar: '#F5A623', verde: '#16a34a' };
-const card = 'rounded-xl bg-white p-5 shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10';
-const selectCls = 'rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue';
+const card = 'rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5';
+const selectCls =
+  'rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition-colors ' +
+  'focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40 dark:border-white/15 dark:bg-white/5 dark:text-white';
 const mesLabel = (m) => ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][Number(m.split('-')[1]) - 1];
 
 const COLUNAS = [
@@ -55,7 +57,12 @@ export default function DesempenhoPage() {
   useEffect(() => { carregar(); /* eslint-disable-next-line */ }, [periodo, vendedorId]);
 
   if (loading) return <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando...</p>;
-  if (error) return <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>;
+  if (error)
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+        {error}
+      </div>
+    );
 
   const vazio = !dados || dados.vendedores.length === 0 || dados.cards.vendas === 0;
   const linhas = [...(dados?.vendedores || [])].sort((a, b) => {
@@ -95,8 +102,8 @@ export default function DesempenhoPage() {
               { label: 'Comissão projetada', v: formatBRL(dados.cards.comissao_projetada) },
               { label: 'Comissão recebida', v: formatBRL(dados.cards.comissao_recebida) },
               { label: 'Ticket médio', v: formatBRL(dados.cards.ticket_medio) },
-            ].map((k) => (
-              <div key={k.label} className={card}>
+            ].map((k, i) => (
+              <div key={k.label} style={{ '--rise-delay': `${i * 50}ms` }} className={`${card} animate-rise`}>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{k.label}</p>
                 <p className="mt-1 font-heading text-xl font-bold text-brand-navy dark:text-white">{k.v}</p>
               </div>
@@ -120,7 +127,7 @@ export default function DesempenhoPage() {
               </p>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Faturamento dos 3 maiores ÷ total.</p>
               {dados.indice_concentracao > 70 && (
-                <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+                <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">
                   Sua receita depende demais de poucas pessoas — risco de concentração.
                 </p>
               )}
@@ -143,20 +150,27 @@ export default function DesempenhoPage() {
           <section className={card}>
             <h3 className="mb-3 font-heading text-sm font-semibold text-brand-navy dark:text-white">Ranking detalhado</h3>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-white/10">
+              <table className="min-w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs uppercase tracking-wide text-gray-400">
+                  <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wide text-gray-400 dark:border-white/10">
                     {COLUNAS.map((col) => (
-                      <th key={col.key} className="cursor-pointer px-3 py-2 hover:text-brand-navy dark:hover:text-white"
-                        onClick={() => setOrdem((o) => ({ campo: col.key, asc: o.campo === col.key ? !o.asc : false }))}>
+                      <th
+                        key={col.key}
+                        className="press cursor-pointer px-3 py-2 transition-colors hover:text-brand-navy dark:hover:text-white"
+                        onClick={() => setOrdem((o) => ({ campo: col.key, asc: o.campo === col.key ? !o.asc : false }))}
+                      >
                         {col.label}{ordem.campo === col.key ? (ordem.asc ? ' ▲' : ' ▼') : ''}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 text-sm dark:divide-white/5">
-                  {linhas.map((l) => (
-                    <tr key={l.vendedor_id}>
+                <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                  {linhas.map((l, i) => (
+                    <tr
+                      key={l.vendedor_id}
+                      style={{ '--rise-delay': `${Math.min(i, 10) * 30}ms` }}
+                      className="animate-rise-row transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5"
+                    >
                       {COLUNAS.map((col) => (
                         <td key={col.key} className={`px-3 py-2 ${col.key === 'nome' ? 'font-medium text-brand-navy dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}>
                           {col.fmt(l[col.key])}

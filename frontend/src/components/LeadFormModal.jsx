@@ -101,7 +101,7 @@ export default function LeadFormModal({ open, onClose, onSaved, lead = null, est
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-300"
+            className="press rounded-lg px-4 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
           >
             Cancelar
           </button>
@@ -109,7 +109,7 @@ export default function LeadFormModal({ open, onClose, onSaved, lead = null, est
             type="button"
             onClick={salvar}
             disabled={!podeSalvar}
-            className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
+            className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
           >
             {salvando ? 'Salvando...' : 'Salvar'}
           </button>

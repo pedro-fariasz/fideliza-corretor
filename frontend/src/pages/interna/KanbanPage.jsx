@@ -70,11 +70,11 @@ function SelecioneCorretor() {
         Escolha um corretor para ver o Kanban de clientes.
       </p>
       <ul className="space-y-2">
-        {resumo.map((t) => (
-          <li key={t.tenant_id}>
+        {resumo.map((t, i) => (
+          <li key={t.tenant_id} style={{ '--rise-delay': `${Math.min(i, 10) * 40}ms` }} className="animate-rise">
             <Link
               to={`/equipe/painel/kanban/${t.tenant_id}`}
-              className="flex items-center justify-between rounded-lg bg-white px-4 py-3 shadow-sm hover:ring-1 hover:ring-brand-blue dark:bg-white/5 dark:ring-1 dark:ring-white/10"
+              className="press flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm transition-all duration-200 hover:border-brand-blue hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-brand-blue"
             >
               <span className="font-medium text-brand-navy dark:text-white">{t.corretor}</span>
               <span className="text-sm text-gray-500 dark:text-gray-400">
@@ -119,7 +119,7 @@ function KanbanDoCorretor({ tenantId }) {
     <div>
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <Link to="/equipe/painel" className="text-sm text-brand-blue hover:text-brand-blue-dark">
+          <Link to="/equipe/painel" className="press inline-block text-sm text-brand-blue transition-colors hover:text-brand-blue-dark">
             ← Corretores
           </Link>
           <h2 className="font-heading text-lg font-semibold text-brand-navy dark:text-white">
@@ -129,9 +129,9 @@ function KanbanDoCorretor({ tenantId }) {
       </div>
 
       {error && (
-        <div className="mb-4 flex items-center justify-between rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
           <span>{error}</span>
-          <button type="button" onClick={carregar} className="font-semibold underline">
+          <button type="button" onClick={carregar} className="press font-semibold underline">
             Tentar de novo
           </button>
         </div>
@@ -155,7 +155,7 @@ function KanbanDoCorretor({ tenantId }) {
 function Card({ cliente: c }) {
   const disparos = c.disparos || { whatsapp: 0, email: 0 };
   return (
-    <div className="rounded-lg bg-white p-3 shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
+    <div className="rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-white/5">
       <p className="truncate font-medium text-brand-navy dark:text-white">{c.nome}</p>
 
       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">

@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Building2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { diasDesde } from '../../utils/clientesMetrics';
 import KanbanBoard from '../../components/KanbanBoard';
+import EmptyState from '../../components/EmptyState';
+import { useTabIndicator } from '../../hooks/useTabIndicator';
+
+const CARD = 'rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-white/5';
 
 const VIEW_KEY = 'fideliza:corretores-view';
 
@@ -75,30 +80,38 @@ export default function CorretoresPage() {
     }
   }
 
-  const tabBase = 'rounded-md px-3 py-1.5 text-sm font-medium';
-  const tabActive = 'bg-brand-blue text-white';
-  const tabInactive =
-    'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100 ' +
-    'dark:bg-white/5 dark:text-gray-300 dark:border-white/15 dark:hover:bg-white/10';
+  const { containerRef: viewRef, style: viewIndicatorStyle } = useTabIndicator(view);
 
   return (
     <div>
-      <div className="mb-4 flex justify-end gap-2" role="tablist" aria-label="Modo de visualização">
+      <div
+        ref={viewRef}
+        role="tablist"
+        aria-label="Modo de visualização"
+        className="relative mb-4 inline-flex gap-1 rounded-xl border border-gray-100 bg-gray-50 p-1 dark:border-white/10 dark:bg-white/5"
+      >
+        <span className="tab-indicator bg-white shadow-sm dark:bg-white/10" style={viewIndicatorStyle} aria-hidden="true" />
         <button
           type="button"
           role="tab"
+          data-tab-key="lista"
           aria-selected={view === 'lista'}
           onClick={() => trocarView('lista')}
-          className={`${tabBase} ${view === 'lista' ? tabActive : tabInactive}`}
+          className={`press relative rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors duration-200 ${
+            view === 'lista' ? 'text-brand-blue dark:text-white' : 'text-gray-500 hover:text-brand-navy dark:text-gray-400 dark:hover:text-white'
+          }`}
         >
           Lista
         </button>
         <button
           type="button"
           role="tab"
+          data-tab-key="kanban"
           aria-selected={view === 'kanban'}
           onClick={() => trocarView('kanban')}
-          className={`${tabBase} ${view === 'kanban' ? tabActive : tabInactive}`}
+          className={`press relative rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors duration-200 ${
+            view === 'kanban' ? 'text-brand-blue dark:text-white' : 'text-gray-500 hover:text-brand-navy dark:text-gray-400 dark:hover:text-white'
+          }`}
         >
           Kanban
         </button>
@@ -107,15 +120,15 @@ export default function CorretoresPage() {
       {loading ? (
         <p className="py-12 text-center text-gray-500 dark:text-gray-400">Carregando...</p>
       ) : error ? (
-        <div className="flex items-center justify-between rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
           <span>{error}</span>
-          <button type="button" onClick={carregar} className="font-semibold underline">
+          <button type="button" onClick={carregar} className="press font-semibold underline">
             Tentar de novo
           </button>
         </div>
       ) : resumo.length === 0 ? (
-        <div className="rounded-lg bg-white p-10 text-center text-gray-500 shadow-sm dark:bg-white/5 dark:text-gray-400 dark:ring-1 dark:ring-white/10">
-          Nenhum corretor cadastrado ainda.
+        <div className={`${CARD} p-8`}>
+          <EmptyState icon={Building2} title="Nenhum corretor cadastrado ainda" />
         </div>
       ) : view === 'kanban' ? (
         <KanbanBoard
@@ -135,11 +148,12 @@ export default function CorretoresPage() {
 function ListaCorretores({ resumo }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {resumo.map((t) => (
+      {resumo.map((t, i) => (
         <Link
           key={t.tenant_id}
           to={`/equipe/painel/kanban/${t.tenant_id}`}
-          className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-brand-blue dark:border-white/10 dark:bg-white/5 dark:hover:border-brand-blue"
+          style={{ '--rise-delay': `${Math.min(i, 10) * 40}ms` }}
+          className="press animate-rise rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-brand-blue"
         >
           <p className="truncate font-medium text-brand-navy dark:text-white">{t.corretor}</p>
           <div className="mt-2 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
@@ -166,10 +180,10 @@ function ListaCorretores({ resumo }) {
 // --- Card do corretor no kanban ---------------------------------------------
 function CorretorCard({ c }) {
   return (
-    <div className="rounded-lg bg-white p-3 shadow-sm dark:bg-white/5 dark:ring-1 dark:ring-white/10">
+    <div className="rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/5">
       <Link
         to={`/equipe/painel/kanban/${c.tenant_id}`}
-        className="font-medium text-brand-navy hover:text-brand-blue dark:text-white dark:hover:text-brand-blue"
+        className="press font-medium text-brand-navy transition-colors hover:text-brand-blue dark:text-white dark:hover:text-brand-blue"
       >
         {c.corretor}
       </Link>

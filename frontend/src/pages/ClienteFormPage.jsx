@@ -93,9 +93,9 @@ function buildPayload(form) {
   return payload;
 }
 
-const sectionClasses = 'rounded-lg bg-white p-5 shadow-sm';
+const sectionClasses = 'rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5';
 const sectionTitleClasses =
-  'mb-4 border-b border-gray-200 pb-2 text-sm font-bold uppercase tracking-wide';
+  'mb-4 border-b border-gray-200 pb-2 text-sm font-bold uppercase tracking-wide dark:border-white/10';
 const gridClasses = 'grid grid-cols-1 gap-4 sm:grid-cols-2';
 
 export default function ClienteFormPage() {
@@ -154,20 +154,20 @@ export default function ClienteFormPage() {
 
   if (savedScore !== null) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow">
-          <p className="text-lg font-semibold text-brand-navy">Cliente salvo com sucesso!</p>
+      <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 dark:bg-brand-navy">
+        <div className="animate-rise w-full max-w-md rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
+          <p className="text-lg font-semibold text-brand-navy dark:text-white">Cliente salvo com sucesso!</p>
           <div className="mt-4 flex items-center justify-center gap-2">
-            <span className="text-sm text-gray-600">Score de completude:</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Score de completude:</span>
             <ScoreBadge score={savedScore} />
           </div>
           {savedScore < 60 && (
-            <p className="mt-3 text-sm text-yellow-700">
+            <p className="mt-3 text-sm text-amber-700 dark:text-amber-400">
               Cadastro incompleto — complete os dados depois para ativar todos os alertas.
             </p>
           )}
           <p className="mt-4 text-sm text-gray-400">Voltando para a lista...</p>
-          <Link to="/clientes" className="mt-2 inline-block text-sm font-semibold text-brand-blue underline">
+          <Link to="/clientes" className="press mt-2 inline-block text-sm font-semibold text-brand-blue underline transition-colors hover:text-brand-blue-dark">
             Ir para a lista agora
           </Link>
         </div>
@@ -176,16 +176,16 @@ export default function ClienteFormPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm">
+    <div className="min-h-screen bg-gray-100 dark:bg-brand-navy">
+      <header className="border-b border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
-            <Link to="/clientes" aria-label="Voltar para a lista">
+            <Link to="/clientes" aria-label="Voltar para a lista" className="press">
               <Logo variant="simbolo" size={32} />
             </Link>
-            <h1 className="text-xl font-bold text-brand-navy">Novo cliente</h1>
+            <h1 className="text-xl font-bold text-brand-navy dark:text-white">Novo cliente</h1>
           </div>
-          <Link to="/clientes" className="text-sm text-gray-500 hover:text-gray-800">
+          <Link to="/clientes" className="press text-sm text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
             ← Voltar para a lista
           </Link>
         </div>
@@ -193,8 +193,8 @@ export default function ClienteFormPage() {
 
       <main className="mx-auto max-w-3xl px-4 py-6">
         <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-          <section className={sectionClasses}>
-            <h2 className={`${sectionTitleClasses} text-red-700`}>
+          <section style={{ '--rise-delay': '0ms' }} className={`${sectionClasses} animate-rise`}>
+            <h2 className={`${sectionTitleClasses} text-red-700 dark:text-red-400`}>
               Obrigatórios — sem eles não há alertas
             </h2>
             <div className={gridClasses}>
@@ -237,8 +237,8 @@ export default function ClienteFormPage() {
             </div>
           </section>
 
-          <section className={sectionClasses}>
-            <h2 className={`${sectionTitleClasses} text-brand-blue-dark`}>
+          <section style={{ '--rise-delay': '60ms' }} className={`${sectionClasses} animate-rise`}>
+            <h2 className={`${sectionTitleClasses} text-brand-blue-dark dark:text-brand-blue`}>
               Importantes — melhoram o cadastro
             </h2>
             <div className={gridClasses}>
@@ -267,8 +267,8 @@ export default function ClienteFormPage() {
             </div>
           </section>
 
-          <section className={sectionClasses}>
-            <h2 className={`${sectionTitleClasses} text-gray-600`}>Complementares</h2>
+          <section style={{ '--rise-delay': '120ms' }} className={`${sectionClasses} animate-rise`}>
+            <h2 className={`${sectionTitleClasses} text-gray-600 dark:text-gray-300`}>Complementares</h2>
             <div className={gridClasses}>
               <FormField
                 label="Nível de sinistralidade"
@@ -303,8 +303,8 @@ export default function ClienteFormPage() {
             </div>
           </section>
 
-          <section className={sectionClasses}>
-            <h2 className={`${sectionTitleClasses} text-gray-500`}>
+          <section style={{ '--rise-delay': '180ms' }} className={`${sectionClasses} animate-rise`}>
+            <h2 className={`${sectionTitleClasses} text-gray-500 dark:text-gray-400`}>
               Outros — não afetam o score
             </h2>
             <div className={gridClasses}>
@@ -354,7 +354,10 @@ export default function ClienteFormPage() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-brand-blue/25 bg-brand-blue/5 p-5">
+          <section
+            style={{ '--rise-delay': '240ms' }}
+            className="animate-rise rounded-2xl border border-brand-blue/25 bg-brand-blue/5 p-5 dark:border-brand-blue/30 dark:bg-brand-blue/10"
+          >
             <label className="flex items-start gap-3">
               <input
                 type="checkbox"
@@ -363,10 +366,10 @@ export default function ClienteFormPage() {
                 onChange={handleChange}
                 className="mt-0.5 h-4 w-4 rounded border-gray-300"
               />
-              <span className="text-sm text-gray-800">
+              <span className="text-sm text-gray-800 dark:text-gray-200">
                 <strong>Cliente aceita receber felicitação de aniversário por WhatsApp</strong>
                 <br />
-                <span className="text-gray-600">
+                <span className="text-gray-600 dark:text-gray-400">
                   A mensagem de aniversário é classificada como marketing pela Meta e exige
                   consentimento explícito do cliente (LGPD + regras da Meta).
                 </span>
@@ -375,17 +378,19 @@ export default function ClienteFormPage() {
           </section>
 
           {apiError && (
-            <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{apiError}</div>
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+              {apiError}
+            </div>
           )}
 
           <div className="flex items-center justify-end gap-3 pb-8">
-            <Link to="/clientes" className="text-sm text-gray-500 hover:text-gray-800">
+            <Link to="/clientes" className="press text-sm text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
               Cancelar
             </Link>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-md bg-brand-blue px-6 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
+              className="press rounded-lg bg-brand-blue px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? 'Salvando...' : 'Salvar cliente'}
             </button>
