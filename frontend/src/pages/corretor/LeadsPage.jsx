@@ -200,7 +200,7 @@ export default function LeadsPage() {
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por nome, telefone, e-mail..."
             aria-label="Buscar leads"
-            className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40 dark:border-white/15 dark:bg-white/5 dark:text-white"
+            className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 transition-colors placeholder:text-gray-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40 dark:border-white/15 dark:bg-white/5 dark:text-white"
           />
         </div>
 
@@ -232,7 +232,7 @@ export default function LeadsPage() {
         <button
           type="button"
           onClick={novo}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-blue-dark hover:shadow-md"
+          className="press inline-flex items-center gap-1.5 rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-blue-dark hover:shadow-md"
         >
           <Plus size={16} /> Novo lead
         </button>
@@ -283,7 +283,7 @@ export default function LeadsPage() {
             <button
               type="button"
               onClick={novo}
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition-all hover:bg-brand-blue-dark"
+              className="press inline-flex items-center gap-2 rounded-xl bg-brand-blue px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-blue/25 transition-all hover:bg-brand-blue-dark"
             >
               <Plus size={17} /> Novo lead
             </button>
@@ -341,7 +341,7 @@ function ViewBtn({ active, onClick, label, icon: Icon }) {
       onClick={onClick}
       role="tab"
       aria-selected={active}
-      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors ${
+      className={`press inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors ${
         active ? 'bg-brand-blue/10 text-brand-blue' : 'text-gray-400 hover:text-brand-navy dark:hover:text-white'
       }`}
     >
@@ -357,7 +357,7 @@ function StagePill({ label, count, active, onClick }) {
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium transition-all ${
+      className={`press inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium transition-all ${
         active
           ? 'border-brand-blue bg-brand-blue text-white shadow-sm shadow-brand-blue/30'
           : 'border-gray-200 bg-white text-gray-600 hover:border-brand-blue/40 hover:text-brand-navy dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:text-white'
@@ -409,7 +409,7 @@ function IconBtn({ children, label, onClick, tone = 'gray', disabled = false }) 
       aria-label={label}
       title={label}
       disabled={disabled}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${tones[tone]} ${disabled ? 'cursor-not-allowed opacity-40' : ''}`}
+      className={`${disabled ? '' : 'press'} inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${tones[tone]} ${disabled ? 'cursor-not-allowed opacity-40' : ''}`}
     >
       {children}
     </button>
@@ -424,11 +424,12 @@ function KanbanLeads({ leads, verValores, onEditar, onMover, whatsappConectado }
 
   return (
     <div className="flex gap-3 overflow-x-auto pb-2">
-      {ESTAGIOS.map((col) => {
+      {ESTAGIOS.map((col, colIndex) => {
         const items = porEstagio(col.value);
         return (
           <div
             key={col.value}
+            style={{ '--rise-delay': `${colIndex * 60}ms` }}
             onDragOver={(e) => {
               e.preventDefault();
               if (alvo !== col.value) setAlvo(col.value);
@@ -439,7 +440,7 @@ function KanbanLeads({ leads, verValores, onEditar, onMover, whatsappConectado }
               setArrastando(null);
               setAlvo(null);
             }}
-            className={`flex w-72 shrink-0 flex-col rounded-2xl border p-2 transition-colors ${
+            className={`animate-rise flex w-72 shrink-0 flex-col rounded-2xl border p-2 transition-colors duration-200 ${
               alvo === col.value ? 'border-brand-blue/50 bg-brand-blue/5' : 'border-gray-100 bg-gray-50/70 dark:border-white/10 dark:bg-white/5'
             }`}
           >
@@ -459,7 +460,9 @@ function KanbanLeads({ leads, verValores, onEditar, onMover, whatsappConectado }
                     setArrastando(null);
                     setAlvo(null);
                   }}
-                  className={`${CARD} cursor-grab p-3 active:cursor-grabbing ${arrastando?.id === lead.id ? 'opacity-50' : ''}`}
+                  className={`${CARD} cursor-grab p-3 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] active:cursor-grabbing ${
+                    arrastando?.id === lead.id ? 'rotate-1 scale-105 opacity-60 shadow-lg' : 'hover:-translate-y-0.5 hover:shadow-md'
+                  }`}
                 >
                   <div className="flex items-start gap-2.5">
                     <Avatar nome={lead.nome} size="sm" />
@@ -493,7 +496,7 @@ function SortHead({ label, k, sort, onSort, className = '' }) {
   const active = sort.key === k;
   return (
     <th className={`px-4 py-3 ${className}`}>
-      <button type="button" onClick={() => onSort(k)} className={`inline-flex items-center gap-1 transition-colors hover:text-brand-navy dark:hover:text-white ${active ? 'text-brand-navy dark:text-white' : ''}`}>
+      <button type="button" onClick={() => onSort(k)} className={`press inline-flex items-center gap-1 transition-colors hover:text-brand-navy dark:hover:text-white ${active ? 'text-brand-navy dark:text-white' : ''}`}>
         {label}
         {active ? sort.dir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} /> : <ArrowUpDown size={12} className="opacity-40" />}
       </button>
@@ -519,8 +522,12 @@ function TabelaLeads({ leads, verValores, sort, onSort, onEditar, onMover, whats
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-            {leads.map((l) => (
-              <tr key={l.id} className="transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5">
+            {leads.map((l, i) => (
+              <tr
+                key={l.id}
+                style={{ '--rise-delay': `${Math.min(i, 10) * 30}ms` }}
+                className="animate-rise-row transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5"
+              >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2.5">
                     <Avatar nome={l.nome} size="sm" />
@@ -559,8 +566,12 @@ function TabelaLeads({ leads, verValores, sort, onSort, onEditar, onMover, whats
 function CardsLeads({ leads, verValores, onEditar, onMover, whatsappConectado }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {leads.map((l) => (
-        <div key={l.id} className={`${CARD} p-4`}>
+      {leads.map((l, i) => (
+        <div
+          key={l.id}
+          style={{ '--rise-delay': `${Math.min(i, 10) * 40}ms` }}
+          className={`${CARD} animate-rise p-4`}
+        >
           <div className="flex items-start gap-3">
             <Avatar nome={l.nome} size="lg" />
             <div className="min-w-0 flex-1">
