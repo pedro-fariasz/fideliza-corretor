@@ -22,6 +22,7 @@ import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
 import Modal from '../../components/Modal';
 import FormField from '../../components/FormField';
+import { useTabIndicator } from '../../hooks/useTabIndicator';
 
 // =============================================================================
 // Inteligência / BI de Carteira (Fase 3). Lê agregados do backend (job noturno
@@ -49,7 +50,7 @@ const COR = { azul: '#1E5EFF', verde: '#10b981', ambar: '#f59e0b', vermelho: '#e
 
 const CARD = 'rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-white/5';
 const SELECT =
-  'rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40 dark:border-white/15 dark:bg-white/5 dark:text-white';
+  'rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition-colors focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40 dark:border-white/15 dark:bg-white/5 dark:text-white';
 
 const faixaTone = {
   verde: 'text-emerald-600 dark:text-emerald-400',
@@ -77,6 +78,7 @@ export default function InteligenciaPage() {
   const [conversao, setConversao] = useState(null); // % leads→vendas (de /api/desempenho)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { containerRef: periodoRef, style: periodoIndicatorStyle } = useTabIndicator(periodo);
 
   useEffect(() => {
     if (podeEscopo) api.biCarteiraCorretores().then(setCorretores).catch(() => {});
@@ -168,10 +170,16 @@ export default function InteligenciaPage() {
 
         {/* Período — segmented pill control */}
         <div
+          ref={periodoRef}
           role="tablist"
           aria-label="Período"
-          className="ml-auto inline-flex gap-1 overflow-x-auto rounded-xl border border-gray-100 bg-gray-50 p-1 dark:border-white/10 dark:bg-white/5"
+          className="relative ml-auto inline-flex gap-1 overflow-x-auto rounded-xl border border-gray-100 bg-gray-50 p-1 dark:border-white/10 dark:bg-white/5"
         >
+          <span
+            className="tab-indicator bg-white shadow-sm dark:bg-white/10"
+            style={periodoIndicatorStyle}
+            aria-hidden="true"
+          />
           {PERIODOS.map((p) => {
             const active = periodo === p.value;
             return (
@@ -179,11 +187,12 @@ export default function InteligenciaPage() {
                 key={p.value}
                 type="button"
                 role="tab"
+                data-tab-key={p.value}
                 aria-selected={active}
                 onClick={() => setPeriodo(p.value)}
-                className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
+                className={`press relative whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-200 ${
                   active
-                    ? 'bg-white text-brand-blue shadow-sm dark:bg-white/10 dark:text-white'
+                    ? 'text-brand-blue dark:text-white'
                     : 'text-gray-500 hover:text-brand-navy dark:text-gray-400 dark:hover:text-white'
                 }`}
               >
@@ -263,9 +272,9 @@ const KPI_TONES = {
   violet: 'bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
 };
 
-function Kpi({ icon: Icon, tone = 'blue', label, value, valueCls }) {
+function Kpi({ icon: Icon, tone = 'blue', label, value, valueCls, delay = 0 }) {
   return (
-    <div className={`${CARD} p-4`}>
+    <div style={{ '--rise-delay': `${delay}ms` }} className={`${CARD} animate-rise p-4`}>
       <div className="flex items-center justify-between gap-2">
         <p className="truncate text-xs text-gray-500 dark:text-gray-400">{label}</p>
         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${KPI_TONES[tone]}`}>
@@ -280,14 +289,15 @@ function Kpi({ icon: Icon, tone = 'blue', label, value, valueCls }) {
 }
 
 // Card de KPI principal (top bar). Clicável quando recebe onClick.
-function HeroKpi({ icon: Icon, tone = 'blue', label, value, valueCls, hint, onClick }) {
+function HeroKpi({ icon: Icon, tone = 'blue', label, value, valueCls, hint, onClick, delay = 0 }) {
   const clickable = typeof onClick === 'function';
   const Tag = clickable ? 'button' : 'div';
   return (
     <Tag
       type={clickable ? 'button' : undefined}
       onClick={onClick}
-      className={`${CARD} p-5 text-left ${clickable ? 'group transition-all hover:-translate-y-0.5 hover:shadow-md' : ''}`}
+      style={{ '--rise-delay': `${delay}ms` }}
+      className={`${CARD} animate-rise p-5 text-left ${clickable ? 'press group transition-all hover:-translate-y-0.5 hover:shadow-md' : ''}`}
     >
       <div className="flex items-center justify-between">
         <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${KPI_TONES[tone]}`}>
@@ -327,8 +337,9 @@ function Painel({ dados, conversao, onCta, navigate }) {
           value={c.score_saude == null ? '—' : c.score_saude}
           valueCls={faixaTone[c.faixa]}
           hint="Score médio da carteira"
+          delay={0}
         />
-        <HeroKpi icon={DollarSign} tone="blue" label="Receita garantida" value={formatBRL(c.receita_garantida)} hint="Apólices vigentes" />
+        <HeroKpi icon={DollarSign} tone="blue" label="Receita garantida" value={formatBRL(c.receita_garantida)} hint="Apólices vigentes" delay={60} />
         <HeroKpi
           icon={XCircle}
           tone="red"
@@ -336,14 +347,15 @@ function Painel({ dados, conversao, onCta, navigate }) {
           value={c.taxa_cancelamento == null ? '—' : `${c.taxa_cancelamento}%`}
           hint="Cancelamentos no período"
           onClick={() => navigate('/carteira')}
+          delay={120}
         />
-        <HeroKpi icon={Target} tone="violet" label="Conversão" value={conversao == null ? '—' : `${conversao}%`} hint="Leads que viraram vendas" />
+        <HeroKpi icon={Target} tone="violet" label="Conversão" value={conversao == null ? '—' : `${conversao}%`} hint="Leads que viraram vendas" delay={180} />
       </div>
 
       {/* Métricas secundárias */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {secundarios.map((k) => (
-          <Kpi key={k.label} {...k} />
+        {secundarios.map((k, i) => (
+          <Kpi key={k.label} {...k} delay={240 + i * 40} />
         ))}
       </div>
 
@@ -378,7 +390,7 @@ function Painel({ dados, conversao, onCta, navigate }) {
                 <button
                   type="button"
                   onClick={() => onCta(i.cta)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
+                  className="press inline-flex items-center gap-1 text-xs font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
                 >
                   {i.cta.label} <ArrowRight size={12} />
                 </button>
@@ -433,11 +445,15 @@ function Painel({ dados, conversao, onCta, navigate }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-                {dados.churn.top20.map((c2) => {
+                {dados.churn.top20.map((c2, i) => {
                   const pct = Math.round(c2.prob * 100);
                   const tone = c2.prob > 0.7 ? 'red' : c2.prob >= 0.4 ? 'amber' : 'emerald';
                   return (
-                    <tr key={c2.apolice_id} className="transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5">
+                    <tr
+                      key={c2.apolice_id}
+                      style={{ '--rise-delay': `${Math.min(i, 10) * 30}ms` }}
+                      className="animate-rise-row transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5"
+                    >
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-2.5">
                           <Avatar nome={c2.cliente_nome} size="sm" />
@@ -574,8 +590,12 @@ function SaudeDadosCard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-              {dados.incompletos.map((c) => (
-                <tr key={c.id}>
+              {dados.incompletos.map((c, i) => (
+                <tr
+                  key={c.id}
+                  style={{ '--rise-delay': `${Math.min(i, 10) * 30}ms` }}
+                  className="animate-rise-row transition-colors hover:bg-gray-50/70 dark:hover:bg-white/5"
+                >
                   <td className="px-3 py-2 font-medium text-brand-navy dark:text-white">{c.nome}</td>
                   <td className="px-3 py-2">
                     <span
@@ -595,7 +615,7 @@ function SaudeDadosCard() {
                     <button
                       type="button"
                       onClick={() => setEditando(c)}
-                      className="text-sm font-semibold text-brand-blue hover:text-brand-blue-dark"
+                      className="press text-sm font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
                     >
                       Completar cadastro
                     </button>
@@ -651,14 +671,14 @@ function CompletarCadastroModal({ cliente, onClose, onSaved }) {
       title={cliente ? `Completar cadastro — ${cliente.nome}` : ''}
       footer={
         <>
-          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 dark:text-gray-300">
+          <button type="button" onClick={onClose} className="press rounded-lg px-4 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 dark:text-gray-300 dark:hover:text-white">
             Cancelar
           </button>
           <button
             type="button"
             onClick={salvar}
             disabled={salvando}
-            className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark disabled:opacity-60"
+            className="press rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:opacity-60"
           >
             {salvando ? 'Salvando...' : 'Salvar'}
           </button>
