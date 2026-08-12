@@ -106,7 +106,7 @@ export default function CadastroPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
+              className="press flex w-full items-center justify-center gap-2 rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? 'Criando conta...' : 'Criar conta'}
               {!submitting && <span aria-hidden="true">→</span>}
@@ -115,7 +115,7 @@ export default function CadastroPage() {
 
           <p className="mt-6 text-center text-sm text-gray-500">
             Já tem conta?{' '}
-            <Link to="/login" className="font-semibold text-brand-blue hover:text-brand-blue-dark">
+            <Link to="/login" className="press font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark">
               Entrar
             </Link>
           </p>

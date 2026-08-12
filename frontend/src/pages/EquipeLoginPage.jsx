@@ -84,7 +84,7 @@ export default function EquipeLoginPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
+              className="press flex w-full items-center justify-center gap-2 rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? 'Entrando...' : 'Entrar'}
               {!submitting && <span aria-hidden="true">→</span>}
@@ -95,7 +95,7 @@ export default function EquipeLoginPage() {
             Novo na equipe?{' '}
             <Link
               to="/equipe/cadastro"
-              className="font-semibold text-brand-blue hover:text-brand-blue-dark"
+              className="press font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
             >
               Solicitar acesso
             </Link>
@@ -104,7 +104,7 @@ export default function EquipeLoginPage() {
 
         <p className="mt-4 text-center text-xs text-gray-400">
           É corretor?{' '}
-          <Link to="/login" className="font-medium text-gray-500 underline hover:text-gray-700">
+          <Link to="/login" className="press font-medium text-gray-500 underline transition-colors hover:text-gray-700">
             Entrar na sua carteira
           </Link>
         </p>

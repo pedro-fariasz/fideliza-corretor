@@ -23,7 +23,7 @@ export default function AuthShell({ children, band = null }) {
       )}
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center px-6 py-10">
-        {children}
+        <div className="animate-rise flex w-full flex-col items-center">{children}</div>
       </main>
 
       <footer className="py-6 text-center text-xs text-gray-400">
@@ -35,5 +35,5 @@ export default function AuthShell({ children, band = null }) {
 
 // Classe de input reutilizada nas telas de auth (fundo claro).
 export const authInputClasses =
-  'w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 ' +
+  'w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 transition-colors ' +
   'placeholder:text-gray-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/40';

@@ -39,7 +39,7 @@ export default function AguardandoAprovacaoPage() {
               <button
                 type="button"
                 onClick={refreshProfile}
-                className="rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-blue-dark"
+                className="press rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark"
               >
                 Já fui aprovado — verificar
               </button>
@@ -47,7 +47,7 @@ export default function AguardandoAprovacaoPage() {
             <button
               type="button"
               onClick={signOut}
-              className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
+              className="press rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
             >
               Sair
             </button>
